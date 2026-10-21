@@ -23,4 +23,17 @@ outro"). Svelte 5 + TypeScript, distribuída como código-fonte por dependência
   `NOTE_COLORS`, e o card na área de transferência (`cardToClipboard`, `cardFromHtml`, `readCard`, `writeCard`,
   `readClipboardCard`). Testes em `tests/atrio.test.ts`.
 - **0.2.0**: `CardBody` aceita `children` (entre a prévia e as pílulas).
-- **Próximo:** o Ideario e o Nodo passarem a usar o Atrio (CSS, `CardBody`, copiar e colar card).
+- Em uso: o Ideario (v0.2.0) e o Nodo (v0.1.0) já usam o `atrio.css`, o `CardBody` e o card na área de
+  transferência (copiar no Ideario e colar no Nodo funciona, e o contrário).
+
+## Rumo (pedido do usuário)
+O Atrio não é só estilo: é **código compartilhado que funciona em vários programas**. O card de nota inteiro mora aqui
+— o editor de texto com Markdown (o TipTap do Ideario), etiquetas, categorias, data e lembrete, status, anexos,
+gravações — e cada app liga ou desliga o que faz sentido para ele (**chaves por app**; no Nodo, por enquanto, a
+categoria fica desligada e o resto ligado). Ordem prevista:
+1. Contrato do card: um tipo `CardFeatures` (as chaves) e um adaptador `CardHost` que o app implementa (salvar o
+   corpo, ler e gravar anexos, listar etiquetas e categorias), para o componente não saber de SQLite, Y.Doc ou arquivo.
+2. Levar o editor do Ideario (`src/components/Editor.svelte` e `src/lib/editor/`) para cá, atrás do `CardHost`.
+3. Pílulas e seletores (etiquetas, data/lembrete, status, cor, emoji) como componentes daqui.
+4. Anexos e gravações (mídia), por último: dependem do núcleo de cada app.
+5. Separar do `atrio.css` o que é só do Ideario.
