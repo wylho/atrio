@@ -1,6 +1,6 @@
 {
   "name": "@wylho/atrio",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Atrio: design system e componentes compartilhados pelo Ideario e pelo Nodo.",
   "license": "MIT",
   "type": "module",
@@ -10,6 +10,16 @@
       "types": "./src/index.ts",
       "svelte": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./editor": {
+      "types": "./src/editor/index.ts",
+      "svelte": "./src/editor/index.ts",
+      "default": "./src/editor/index.ts"
+    },
+    "./emoji": {
+      "types": "./src/emoji.ts",
+      "svelte": "./src/emoji.ts",
+      "default": "./src/emoji.ts"
     },
     "./atrio.css": "./src/atrio.css"
   },
@@ -22,7 +32,18 @@
   },
   "peerDependencies": {
     "@lucide/svelte": ">=1.0.0",
-    "svelte": "^5.57.0"
+    "svelte": "^5.57.0",
+    "@tiptap/core": "^3.31.4",
+    "@tiptap/extension-collaboration": "^3.31.4",
+    "@tiptap/extension-list": "^3.31.4",
+    "@tiptap/extension-table": "^3.31.4",
+    "@tiptap/extensions": "^3.31.4",
+    "@tiptap/pm": "^3.31.4",
+    "@tiptap/starter-kit": "^3.31.4",
+    "@tiptap/y-tiptap": "^3.0.9",
+    "yjs": "^13.6.33",
+    "emojibase-data": "^17.0.0",
+    "bits-ui": "^2.19.5"
   },
   "devDependencies": {
     "@lucide/svelte": "^1.61.0",
@@ -33,6 +54,49 @@
     "svelte-check": "^4.7.6",
     "typescript": "~5.9.3",
     "vite": "^8.3.4",
-    "vitest": "^5.0.5"
+    "vitest": "^5.0.5",
+    "@tiptap/core": "^3.31.4",
+    "@tiptap/extension-collaboration": "^3.31.4",
+    "@tiptap/extension-list": "^3.31.4",
+    "@tiptap/extension-table": "^3.31.4",
+    "@tiptap/extensions": "^3.31.4",
+    "@tiptap/pm": "^3.31.4",
+    "@tiptap/starter-kit": "^3.31.4",
+    "@tiptap/y-tiptap": "^3.0.9",
+    "yjs": "^13.6.33",
+    "emojibase-data": "^17.0.0",
+    "bits-ui": "^2.19.5"
+  },
+  "peerDependenciesMeta": {
+    "@tiptap/core": {
+      "optional": true
+    },
+    "@tiptap/extension-collaboration": {
+      "optional": true
+    },
+    "@tiptap/extension-list": {
+      "optional": true
+    },
+    "@tiptap/extension-table": {
+      "optional": true
+    },
+    "@tiptap/extensions": {
+      "optional": true
+    },
+    "@tiptap/pm": {
+      "optional": true
+    },
+    "@tiptap/starter-kit": {
+      "optional": true
+    },
+    "@tiptap/y-tiptap": {
+      "optional": true
+    },
+    "yjs": {
+      "optional": true
+    },
+    "emojibase-data": {
+      "optional": true
+    }
   }
 }

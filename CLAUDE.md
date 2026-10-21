@@ -23,6 +23,14 @@ outro"). Svelte 5 + TypeScript, distribuída como código-fonte por dependência
   `NOTE_COLORS`, e o card na área de transferência (`cardToClipboard`, `cardFromHtml`, `readCard`, `writeCard`,
   `readClipboardCard`). Testes em `tests/atrio.test.ts`.
 - **0.2.0**: `CardBody` aceita `children` (entre a prévia e as pílulas).
+- **0.3.0** (passos 1 e parte do 2–3 do rumo): contrato `CardFeatures`/`features()`/`CardHost`/`CardMeta`
+  (`src/card/features.ts`); `@wylho/atrio/editor` com as extensões TipTap do Ideario (`noteExtensions`, blocos, link,
+  mídia, `Recorder`; `field` do Y.Doc é opção); `@wylho/atrio/emoji` (`EmojiPicker`, lista carregada sob demanda); peças
+  de interface (`MenuAt`, `MenuList`, `ContextMenu`, `Picker`, `StatusToggle`, `ReminderPopover`, `TagInput` com
+  `known`, `MediaBlock` com `src`/`ondownload`, `AudioPlayer`, `CameraDialog`); utilidades (`util/format`,
+  `util/reminders`, `SEP`/`MenuEntry`, `setNotifier`/`say` para o toast do app). TipTap, Yjs e emojibase são
+  dependências opcionais (só quem importa o editor ou o emoji precisa). Correção: repetir "todo mês" de 31/jan vai a
+  28/fev, como o núcleo do Ideario (antes a interface calculava 3/mar).
 - Em uso: o Ideario (v0.2.0) e o Nodo (v0.1.0) já usam o `atrio.css`, o `CardBody` e o card na área de
   transferência (copiar no Ideario e colar no Nodo funciona, e o contrário).
 
@@ -33,7 +41,7 @@ gravações — e cada app liga ou desliga o que faz sentido para ele (**chaves 
 categoria fica desligada e o resto ligado). Ordem prevista:
 1. Contrato do card: um tipo `CardFeatures` (as chaves) e um adaptador `CardHost` que o app implementa (salvar o
    corpo, ler e gravar anexos, listar etiquetas e categorias), para o componente não saber de SQLite, Y.Doc ou arquivo.
-2. Levar o editor do Ideario (`src/components/Editor.svelte` e `src/lib/editor/`) para cá, atrás do `CardHost`.
+2. (Peças feitas na 0.3.0; falta o componente.) Levar o editor do Ideario (`src/components/Editor.svelte` e `src/lib/editor/`) para cá, atrás do `CardHost`.
 3. Pílulas e seletores (etiquetas, data/lembrete, status, cor, emoji) como componentes daqui.
 4. Anexos e gravações (mídia), por último: dependem do núcleo de cada app.
 5. Separar do `atrio.css` o que é só do Ideario.

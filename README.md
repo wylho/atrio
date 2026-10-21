@@ -16,9 +16,9 @@ aplicativos, e define os formatos de dados que eles trocam entre si.
 ## Instalação
 
 ```sh
-pnpm add github:wylho/atrio#v0.2.0
+pnpm add github:wylho/atrio#v0.3.0
 # ou
-npm install github:wylho/atrio#v0.2.0
+npm install github:wylho/atrio#v0.3.0
 ```
 
 ```ts
@@ -42,6 +42,29 @@ design system: `.topbar`, `.icon-btn`, `.btn`, `.seg`, `.pill`, `.card`, `.previ
 | Exportação | Descrição |
 |---|---|
 | `CardBody` | Corpo do card de nota: emoji, título, prévia estruturada e linha de pílulas. Props: `title`, `emoji`, `blocks: PreviewBlock[]`; snippets `meta`, `file` e `children`. O consumidor fornece o contêiner `.card`. |
+
+### Contrato do card
+
+| Exportação | Descrição |
+|---|---|
+| `CardFeatures`, `features(off)`, `ALL_FEATURES` | Chaves por app: o que o card mostra (etiquetas, categoria, lembrete, status, cor, emoji, anexos, captura, links, texto rico). `features({ category: false })` liga tudo menos a categoria. |
+| `CardHost` | Interface que o app implementa: etiquetas e categorias existentes, anexos (endereço, importar, baixar), prévia de link, Markdown → documento, imagem da área de transferência. |
+| `CardMeta` | Metadados do card comuns aos apps. |
+
+### Peças de interface
+
+`MenuAt`, `MenuList`, `ContextMenu` (menus a partir de `MenuEntry`), `Picker`, `StatusToggle`, `ReminderPopover`,
+`TagInput` (sugestões a partir de `known`), `MediaBlock`, `AudioPlayer`, `CameraDialog`. O toast é do app:
+`setNotifier(fn)`.
+
+### Editor — `@wylho/atrio/editor`
+
+`noteExtensions(opts)` (TipTap: listas, tarefas em níveis, tabela, código, fotos lado a lado, anexos, bloco de link,
+colar Markdown, Y.Doc opcional), funções de blocos e mídia, `Recorder`. Requer os pacotes `@tiptap/*` e `yjs`.
+
+### Emoji — `@wylho/atrio/emoji`
+
+`EmojiPicker` e as funções da lista (`emojibase-data`, em português, carregada ao abrir).
 
 ### Prévia de nota
 
