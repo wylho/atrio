@@ -1,0 +1,38 @@
+{
+  "name": "@wylho/atrio",
+  "version": "0.1.0",
+  "description": "Atrio: design system e componentes compartilhados pelo Ideario e pelo Nodo.",
+  "license": "MIT",
+  "type": "module",
+  "svelte": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "svelte": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./atrio.css": "./src/atrio.css"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "@lucide/svelte": ">=1.0.0",
+    "svelte": "^5.57.0"
+  },
+  "devDependencies": {
+    "@lucide/svelte": "^1.61.0",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@tsconfig/svelte": "^5.0.8",
+    "jsdom": "^30.1.3",
+    "svelte": "^5.57.2",
+    "svelte-check": "^4.7.6",
+    "typescript": "~5.9.3",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.5"
+  }
+}
