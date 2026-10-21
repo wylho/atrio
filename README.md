@@ -1,25 +1,24 @@
+<p align="center"><img src="assets/icon.svg" width="72" alt="Atrio"></p>
+
 # Atrio
 
-O design system e os componentes que o [Ideario](https://github.com/wylho/ideario) e o
-[Nodo](https://github.com/wylho/nodo) compartilham. Mudou aqui, muda nos dois.
+Biblioteca de componentes e design system compartilhada pelo [Ideario](https://github.com/wylho/ideario) e pelo
+[Nodo](https://github.com/wylho/nodo). É a fonte única dos tokens, dos estilos e dos componentes comuns aos dois
+aplicativos, e define os formatos de dados que eles trocam entre si.
 
-## O que tem
+| | |
+|---|---|
+| Pacote | `@wylho/atrio` |
+| Distribuição | código-fonte Svelte 5 + TypeScript, por dependência git com tag |
+| Dependências do consumidor | `svelte` ^5.57, `@lucide/svelte` ≥ 1.0 |
+| Licença | MIT |
 
-- **`atrio.css`**: tokens (cores claras e escuras, cores de nota, sombras, raios, fonte do sistema) e os estilos do
-  design system: botões, pílulas, folhas, menus e o card de nota.
-- **`CardBody`**: o miolo do card de nota (emoji, título, prévia estruturada com tópicos, tarefas, código, links e
-  #hashtags, e a linha de pílulas). O Ideario põe em volta a capa, o alfinete e a seleção; o Nodo põe o card no
-  lugar do nó do mapa.
-- **Prévia a partir de Markdown** (`previewFromMarkdown`): as mesmas regras e limites da projeção do Ideario, para
-  quem guarda a nota como texto.
-- **Card na área de transferência** (`writeCard`, `readCard`): copiar uma nota no Ideario e colar no Nodo vira um nó
-  com a mesma nota, e o contrário também. Vai como HTML (com o card em JSON num atributo `data-atrio-card`) e como
-  Markdown, então também cola bem em qualquer outro app.
-
-## Como usar
+## Instalação
 
 ```sh
-pnpm add github:wylho/atrio#v0.1.0     # ou npm install github:wylho/atrio#v0.1.0
+pnpm add github:wylho/atrio#v0.2.0
+# ou
+npm install github:wylho/atrio#v0.2.0
 ```
 
 ```ts
@@ -27,15 +26,79 @@ import '@wylho/atrio/atrio.css'
 import { CardBody, previewFromMarkdown, readCard, writeCard } from '@wylho/atrio'
 ```
 
-Os componentes vão como código-fonte Svelte 5: o Vite do app compila junto. Precisa de `svelte` 5 e
-`@lucide/svelte` no app.
+Os módulos são entregues sem compilação; o Vite do consumidor (com `@sveltejs/vite-plugin-svelte`) compila os
+componentes junto com o aplicativo.
 
-## Versões
+## Conteúdo
 
-Cada mudança que um app vai usar ganha uma tag (`v0.1.0`, `v0.2.0`…). Os apps apontam para uma tag, não para o
-`main`, para uma mudança aqui nunca quebrar o build de um deles sem querer. Para levar uma mudança aos dois: tag
-nova aqui e a dependência atualizada lá.
+### Estilos — `@wylho/atrio/atrio.css`
+
+Tokens de cor (claro e escuro, cores de nota `--n-*`), tipografia (fonte do sistema), sombras e raios, e as classes do
+design system: `.topbar`, `.icon-btn`, `.btn`, `.seg`, `.pill`, `.card`, `.preview`/`.pv-*`, `.sheet`, `.menu`,
+`.toast`, entre outras. Na versão atual o arquivo ainda reproduz o `app.css` do Ideario por inteiro.
+
+### Componentes
+
+| Exportação | Descrição |
+|---|---|
+| `CardBody` | Corpo do card de nota: emoji, título, prévia estruturada e linha de pílulas. Props: `title`, `emoji`, `blocks: PreviewBlock[]`; snippets `meta`, `file` e `children`. O consumidor fornece o contêiner `.card`. |
+
+### Prévia de nota
+
+| Exportação | Descrição |
+|---|---|
+| `blocksFromMarkdown(md)` | Converte Markdown em `PreviewBlock[]`, sem formatação de linha, seguindo as regras de `projection.rs` do Ideario. |
+| `previewOf(blocks)` | Aplica os limites da prévia: 24 blocos, 12 tarefas, 1200 caracteres; tarefas excedentes viram `{ kind: 'more' }`. |
+| `previewFromMarkdown(md)` | `previewOf(blocksFromMarkdown(md))`. |
+| `withHashtags(text)` | Separa `#hashtags` para destaque. |
+| `watchClip(el)` | Marca `[data-clipped]` quando o conteúdo excede a altura máxima. |
+| `NOTE_COLORS`, `FILE_ICONS` | Cores de nota e ícones por tipo de anexo. |
+| `PreviewBlock`, `NoteColor`, `AttachmentKind` | Tipos. |
+
+### Área de transferência
+
+| Exportação | Descrição |
+|---|---|
+| `cardToClipboard(card)` | Serializa um `ClipCard` em `{ html, text }`. |
+| `cardFromHtml(html)` / `readCard(dataTransfer)` | Lê um card de HTML colado; `null` se não houver. |
+| `writeCard(card)` / `readClipboardCard()` | Escreve e lê pela API assíncrona de área de transferência. |
+
+## Formato do card na área de transferência
+
+Versão `CARD_FORMAT = 1`. Um card é gravado em dois tipos MIME simultaneamente:
+
+- **`text/html`**: `<div data-atrio-card="BASE64">…</div>`, em que `BASE64` é o JSON abaixo codificado em UTF-8 e
+  base64. O conteúdo do `div` é uma representação legível (título em `<h3>`, uma linha por `<p>`), usada por
+  aplicativos que não conhecem o formato.
+- **`text/plain`**: Markdown — `# Título`, linha em branco, corpo.
+
+```json
+{
+  "atrio": 1,
+  "title": "string",
+  "markdown": "string",
+  "color": "none | sand | sage | sky | rose | lilac | butter",
+  "emoji": "string | null",
+  "tags": ["string"]
+}
+```
+
+Campos opcionais: `color`, `emoji`, `tags`. Um leitor ignora campos desconhecidos e aceita versões maiores lendo os
+campos que conhece. Mudanças incompatíveis exigem nova versão de `CARD_FORMAT` e leitura da anterior.
+
+## Versionamento
+
+Versionamento semântico. A versão é definida em `package.json`; o workflow `CI` executa a verificação a cada push no
+`main` e cria a tag `vX.Y.Z` correspondente se ela ainda não existir. Os consumidores referenciam sempre uma tag.
+
+## Desenvolvimento
+
+```sh
+pnpm install
+pnpm run check   # svelte-check
+pnpm run test    # vitest (jsdom)
+```
 
 ## Licença
 
-MIT. Permissiva de propósito: o Nodo é GPL e o Ideario não, e os dois precisam poder usar.
+MIT. Ver [LICENSE](LICENSE).
