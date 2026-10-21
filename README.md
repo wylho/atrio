@@ -16,9 +16,9 @@ aplicativos, e define os formatos de dados que eles trocam entre si.
 ## Instalação
 
 ```sh
-pnpm add github:wylho/atrio#v0.5.0
+pnpm add github:wylho/atrio#v0.6.0
 # ou
-npm install github:wylho/atrio#v0.5.0
+npm install github:wylho/atrio#v0.6.0
 ```
 
 ```ts
@@ -104,6 +104,19 @@ colar Markdown, Y.Doc opcional), funções de blocos e mídia, `Recorder`. Reque
 | `cardToClipboard(card)` | Serializa um `ClipCard` em `{ html, text }`. |
 | `cardFromHtml(html)` / `readCard(dataTransfer)` | Lê um card de HTML colado; `null` se não houver. |
 | `writeCard(card)` / `readClipboardCard()` | Escreve e lê pela API assíncrona de área de transferência. |
+
+## Crate Rust — `atrio`
+
+O que os núcleos (Rust) dos apps compartilham:
+
+| Módulo | Descrição |
+|---|---|
+| `markdown` | `to_markdown(doc, nomes)` e `from_markdown(md)`: corpo da nota (JSON do TipTap) ↔ Markdown, ida e volta sem perda. |
+| `canon` | Forma canônica do documento, para comparar dois que o editor mostra igual. |
+
+```toml
+atrio = { git = "https://github.com/wylho/atrio", tag = "v0.6.0" }
+```
 
 ## Formato do card na área de transferência
 

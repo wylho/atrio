@@ -1,5 +1,5 @@
-# Confere o Atrio e marca a versão: a cada push no main, roda os testes e, se a versão do package.json ainda não
-# tem tag, cria `vX.Y.Z`. Os apps apontam para essa tag.
+# Confere o Atrio (Svelte e a crate Rust) e marca a versão: a cada push no main, roda os testes e, se a versão do
+# package.json ainda não tem tag, cria `vX.Y.Z` (a crate tem a mesma versão). Os apps apontam para essa tag.
 name: CI
 
 on:
@@ -25,6 +25,14 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm run check
       - run: pnpm run test
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - name: Rust (crate atrio)
+        run: |
+          cargo fmt --all --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test
       - name: Marcar a versão
         if: github.event_name == 'push'
         run: |

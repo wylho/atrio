@@ -1,0 +1,15 @@
+[package]
+name = "atrio"
+version = "0.6.0"
+edition = "2021"
+rust-version = "1.80"
+license = "MIT"
+description = "Atrio: o núcleo compartilhado do Ideario e do Nodo (nota em Markdown ↔ documento do editor)."
+repository = "https://github.com/wylho/atrio"
+
+[dependencies]
+pulldown-cmark = { version = "0.13", default-features = false }
+serde_json = "1"
+
+[dev-dependencies]
+proptest = "1"

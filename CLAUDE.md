@@ -1,7 +1,8 @@
 # Atrio — design system e componentes do Ideario e do Nodo
 
 Biblioteca compartilhada pelos dois apps do usuário (pedido dele: "quando você muda um card num, muda também no
-outro"). Svelte 5 + TypeScript, distribuída como código-fonte por dependência git com tag.
+outro"). Svelte 5 + TypeScript, distribuída como código-fonte por dependência git com tag, mais uma crate Rust (`crates/atrio`)
+para o que os dois núcleos compartilham (dependência git do Cargo, na mesma tag).
 
 ## Regras
 - **Fonte da verdade do visual.** O `src/atrio.css` veio de `ideario/src/app.css`. Mudança de token, cor ou
@@ -11,8 +12,8 @@ outro"). Svelte 5 + TypeScript, distribuída como código-fonte por dependência
   (`src/clipboard.ts`, `CARD_FORMAT`). Mudou o formato: subir `CARD_FORMAT` e continuar lendo a versão anterior.
 - UI em **português do Brasil**; código e identificadores em inglês. Dados de exemplo sempre fictícios (repositório
   público).
-- Antes de dizer pronto: `pnpm run check` e `pnpm run test`. Testes para regra nova (e provar que o teste pega o erro).
-- Versão: só subir a `version` do `package.json`; o workflow `CI` testa e cria a tag `vX.Y.Z` no GitHub (daqui o
+- Antes de dizer pronto: `pnpm run check`, `pnpm run test` e, na crate, `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`. Testes para regra nova (e provar que o teste pega o erro).
+- Versão: subir a `version` do `package.json` e a do `crates/atrio/Cargo.toml` juntas; o workflow `CI` testa e cria a tag `vX.Y.Z` no GitHub (daqui o
   proxy não deixa empurrar tag). Os apps apontam para a tag.
 - Git: commit e push no `main` ao terminar cada tarefa.
 
@@ -45,6 +46,9 @@ outro"). Svelte 5 + TypeScript, distribuída como código-fonte por dependência
   `chooseEmoji`, `hasMedia`, `isEmpty`, `getEditor`; `top` é a barra do app; `onready` sai logo depois da montagem.
   Regras do card em `src/card/meta.ts` (`CardMeta`, `emptyMeta`, `setReminder`, `setStatus`, `STATUS`, `statusOf`,
   `hasStatus`). O Ideario usa o card na nota aberta, com tudo ligado (130 e2e).
+- **0.6.0**: **crate Rust `atrio`** (`crates/atrio`, pedido do usuário: tudo o que der para ser comum entre os apps):
+  `markdown` (corpo da nota ↔ Markdown, o `markdown.rs` do Ideario, com proptest de ida e volta) e `canon` (forma
+  canônica do documento). Versão da crate = versão do `package.json`. O CI testa Svelte e Rust.
 - Em uso: o Ideario (v0.2.0) e o Nodo (v0.1.0) já usam o `atrio.css`, o `CardBody` e o card na área de
   transferência (copiar no Ideario e colar no Nodo funciona, e o contrário).
 
