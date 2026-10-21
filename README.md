@@ -16,9 +16,9 @@ aplicativos, e define os formatos de dados que eles trocam entre si.
 ## Instalação
 
 ```sh
-pnpm add github:wylho/atrio#v0.3.0
+pnpm add github:wylho/atrio#v0.4.0
 # ou
-npm install github:wylho/atrio#v0.3.0
+npm install github:wylho/atrio#v0.4.0
 ```
 
 ```ts
@@ -36,6 +36,13 @@ componentes junto com o aplicativo.
 Tokens de cor (claro e escuro, cores de nota `--n-*`), tipografia (fonte do sistema), sombras e raios, e as classes do
 design system: `.topbar`, `.icon-btn`, `.btn`, `.seg`, `.pill`, `.card`, `.preview`/`.pv-*`, `.sheet`, `.menu`,
 `.toast`, entre outras. Na versão atual o arquivo ainda reproduz o `app.css` do Ideario por inteiro.
+
+### Temas
+
+Os mesmos em todos os apps: Sistema (imita GNOME, KDE, Windows ou macOS, com o destaque do sistema), **Atrio**
+(paleta-base), Papel, Grafite e Floresta, cada um claro e escuro. `PALETTES`, `DESKTOPS`, `cssVars(colors, mode)`
+(as variáveis do `atrio.css`), `fitAccent`, `mix`, `contrast`, `NOTE_COLOR_TOKENS`, `resolveNoteColor` e
+`normalizePaletteId` (aceita os nomes antigos da paleta-base). O estado do tema fica em cada app.
 
 ### Componentes
 

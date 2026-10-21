@@ -37,3 +37,21 @@ export * from './util/format'
 export * from './util/reminders'
 export { SEP, type MenuEntry } from './util/menu'
 export { say, setNotifier } from './util/notify'
+
+// Temas (os mesmos em todos os apps; a paleta-base é a Atrio)
+export {
+  contrast,
+  cssVars,
+  DESKTOPS,
+  fitAccent,
+  GNOME_ACCENTS,
+  mix,
+  normalizePaletteId,
+  NOTE_COLOR_TOKENS,
+  PALETTES,
+  resolveNoteColor,
+  type Colors,
+  type DesktopId,
+  type Mode,
+  type PaletteId,
+} from './theme/palettes'

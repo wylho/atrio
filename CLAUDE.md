@@ -31,10 +31,18 @@ outro"). Svelte 5 + TypeScript, distribuída como código-fonte por dependência
   `util/reminders`, `SEP`/`MenuEntry`, `setNotifier`/`say` para o toast do app). TipTap, Yjs e emojibase são
   dependências opcionais (só quem importa o editor ou o emoji precisa). Correção: repetir "todo mês" de 31/jan vai a
   28/fev, como o núcleo do Ideario (antes a interface calculava 3/mar).
+- **0.4.0**: **temas do Atrio** (`src/theme/palettes.ts`, pedido do usuário: o tema é da biblioteca, não de um app).
+  Sistema, Atrio (a paleta-base, que antes se chamava Ideario num app e Nodo no outro), Papel, Grafite, Floresta,
+  cada um claro e escuro; `DESKTOPS` (GNOME, KDE, Windows, macOS), `GNOME_ACCENTS`, `fitAccent`, `cssVars`,
+  `NOTE_COLOR_TOKENS`/`resolveNoteColor` e `normalizePaletteId` (lê `ideario`, `nodo` e `mapist` gravados como `atrio`).
+  O estado do tema (claro/escuro, ler o sistema) continua em cada app, porque cada núcleo lê o sistema do seu jeito.
 - Em uso: o Ideario (v0.2.0) e o Nodo (v0.1.0) já usam o `atrio.css`, o `CardBody` e o card na área de
   transferência (copiar no Ideario e colar no Nodo funciona, e o contrário).
 
 ## Rumo (pedido do usuário)
+O Atrio é o **hub**: tudo o que puder ser compartilhado sai daqui, e mudar aqui muda em todos os apps ligados a ele
+(componentes, temas, formatos). Antes de criar algo num app, ver se não é do Atrio.
+
 O Atrio não é só estilo: é **código compartilhado que funciona em vários programas**. O card de nota inteiro mora aqui
 — o editor de texto com Markdown (o TipTap do Ideario), etiquetas, categorias, data e lembrete, status, anexos,
 gravações — e cada app liga ou desliga o que faz sentido para ele (**chaves por app**; no Nodo, por enquanto, a
