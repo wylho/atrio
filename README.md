@@ -16,9 +16,9 @@ aplicativos, e define os formatos de dados que eles trocam entre si.
 ## Instalação
 
 ```sh
-pnpm add github:wylho/atrio#v0.6.0
+pnpm add github:wylho/atrio#v0.7.0
 # ou
-npm install github:wylho/atrio#v0.6.0
+npm install github:wylho/atrio#v0.7.0
 ```
 
 ```ts
@@ -112,10 +112,11 @@ O que os núcleos (Rust) dos apps compartilham:
 | Módulo | Descrição |
 |---|---|
 | `markdown` | `to_markdown(doc, nomes)` e `from_markdown(md)`: corpo da nota (JSON do TipTap) ↔ Markdown, ida e volta sem perda. |
+| `text` | `normalize_tag`, `clean_tags`, `clean_emoji`, `REPEATS`: as regras de etiqueta, emoji e lembrete da interface. |
 | `canon` | Forma canônica do documento, para comparar dois que o editor mostra igual. |
 
 ```toml
-atrio = { git = "https://github.com/wylho/atrio", tag = "v0.6.0" }
+atrio = { git = "https://github.com/wylho/atrio", tag = "v0.7.0" }
 ```
 
 ## Formato do card na área de transferência

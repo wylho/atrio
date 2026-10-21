@@ -49,6 +49,7 @@ para o que os dois núcleos compartilham (dependência git do Cargo, na mesma ta
 - **0.6.0**: **crate Rust `atrio`** (`crates/atrio`, pedido do usuário: tudo o que der para ser comum entre os apps):
   `markdown` (corpo da nota ↔ Markdown, o `markdown.rs` do Ideario, com proptest de ida e volta) e `canon` (forma
   canônica do documento). Versão da crate = versão do `package.json`. O CI testa Svelte e Rust.
+- **0.7.0**: `atrio::text` (`normalize_tag`, `clean_tags`, `clean_emoji`, `REPEATS`), as regras do Ideario.
 - Em uso: o Ideario (v0.2.0) e o Nodo (v0.1.0) já usam o `atrio.css`, o `CardBody` e o card na área de
   transferência (copiar no Ideario e colar no Nodo funciona, e o contrário).
 
