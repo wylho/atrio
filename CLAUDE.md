@@ -53,6 +53,8 @@ para o que os dois núcleos compartilham (dependência git do Cargo, na mesma ta
 - **0.8.0**: `CardPills` (as pílulas do fim do card: lembrete ou status, categoria, anexos, etiquetas; cliques
   opcionais) e `CardDialog` (a janela do card aberto: tela cheia no celular, diálogo na janela larga, `doc` = modo
   documento). Os dois apps abrem o card do mesmo jeito.
+- **0.9.0**: `CardPills` com `onstatus`: o card que tem status (ou lembrete) mostra o seletor de três cores e muda
+  ali mesmo (pedido do usuário: mudar o status na lista, sem abrir a nota).
 - Em uso: o Ideario (card inteiro, `NoteEditor`) e o Nodo (o nó é o card: `CardBody` + `CardPills` no mapa,
   `CardDialog` + `NoteEditor` ao abrir, com `features({ category: false, attachments: false, capture: false, links: false })`).
   Copiar no Ideario e colar no Nodo funciona, e o contrário.
