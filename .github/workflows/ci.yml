@@ -1,0 +1,36 @@
+# Confere o Atrio e marca a versão: a cada push no main, roda os testes e, se a versão do package.json ainda não
+# tem tag, cria `vX.Y.Z`. Os apps apontam para essa tag.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run check
+      - run: pnpm run test
+      - name: Marcar a versão
+        if: github.event_name == 'push'
+        run: |
+          v="v$(node -p "require('./package.json').version")"
+          if git ls-remote --exit-code --tags origin "refs/tags/$v" >/dev/null; then
+            echo "$v já existe"
+          else
+            git tag "$v" && git push origin "$v" && echo "::notice::Versão $v marcada"
+          fi

@@ -12,7 +12,8 @@ outro"). Svelte 5 + TypeScript, distribuída como código-fonte por dependência
 - UI em **português do Brasil**; código e identificadores em inglês. Dados de exemplo sempre fictícios (repositório
   público).
 - Antes de dizer pronto: `pnpm run check` e `pnpm run test`. Testes para regra nova (e provar que o teste pega o erro).
-- Versão: `package.json` e tag `vX.Y.Z` juntos. Os apps apontam para a tag.
+- Versão: só subir a `version` do `package.json`; o workflow `CI` testa e cria a tag `vX.Y.Z` no GitHub (daqui o
+  proxy não deixa empurrar tag). Os apps apontam para a tag.
 - Git: commit e push no `main` ao terminar cada tarefa.
 
 ## Estado atual
