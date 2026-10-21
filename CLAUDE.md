@@ -22,4 +22,5 @@ outro"). Svelte 5 + TypeScript, distribuída como código-fonte por dependência
   blocos, 12 tarefas, 1200 caracteres, 8 linhas de código), `watchClip`, `withHashtags`, `FILE_ICONS`,
   `NOTE_COLORS`, e o card na área de transferência (`cardToClipboard`, `cardFromHtml`, `readCard`, `writeCard`,
   `readClipboardCard`). Testes em `tests/atrio.test.ts`.
+- **0.2.0**: `CardBody` aceita `children` (entre a prévia e as pílulas).
 - **Próximo:** o Ideario e o Nodo passarem a usar o Atrio (CSS, `CardBody`, copiar e colar card).

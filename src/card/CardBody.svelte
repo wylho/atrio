@@ -16,12 +16,15 @@
     file,
     /** Pílulas do fim do card (lembrete, categoria, etiquetas…). */
     meta,
+    /** O que o app põe entre a prévia e as pílulas (o Ideario: o nome do arquivo de uma nota que é só um anexo). */
+    children,
   }: {
     title?: string
     emoji?: string | null
     blocks: PreviewBlock[]
     file?: Snippet<[Extract<PreviewBlock, { kind: 'file' }>]>
     meta?: Snippet
+    children?: Snippet
   } = $props()
 </script>
 
@@ -61,5 +64,6 @@
       {/each}
     </div>
   {/if}
+  {@render children?.()}
   {#if meta}<div class="card-meta">{@render meta()}</div>{/if}
 </div>
