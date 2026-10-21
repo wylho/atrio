@@ -16,9 +16,9 @@ aplicativos, e define os formatos de dados que eles trocam entre si.
 ## Instalação
 
 ```sh
-pnpm add github:wylho/atrio#v0.4.0
+pnpm add github:wylho/atrio#v0.5.0
 # ou
-npm install github:wylho/atrio#v0.4.0
+npm install github:wylho/atrio#v0.5.0
 ```
 
 ```ts
@@ -63,6 +63,18 @@ Os mesmos em todos os apps: Sistema (imita GNOME, KDE, Windows ou macOS, com o d
 `MenuAt`, `MenuList`, `ContextMenu` (menus a partir de `MenuEntry`), `Picker`, `StatusToggle`, `ReminderPopover`,
 `TagInput` (sugestões a partir de `known`), `MediaBlock`, `AudioPlayer`, `CameraDialog`. O toast é do app:
 `setNotifier(fn)`.
+
+### Card — `NoteEditor` (em `@wylho/atrio/editor`)
+
+O card de nota inteiro, editável: emoji de capa, título, texto em blocos, fotos e anexos, gravador e câmera,
+categoria, lembrete, status, etiquetas, cor e barra de formatação. O app fornece a janela em volta, o armazenamento
+(um `Y.Doc` ou um documento comum com `onbody`), as chaves (`features`) e o anfitrião (`host`).
+
+```svelte
+<NoteEditor {meta} features={features({ category: false })} {host} content={doc} onbody={(ed) => save(ed.getJSON())} />
+```
+
+Regras compartilhadas: `CardMeta`, `emptyMeta`, `setReminder`, `setStatus`, `STATUS`, `statusOf`, `hasStatus`.
 
 ### Editor — `@wylho/atrio/editor`
 

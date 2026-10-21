@@ -2,7 +2,7 @@
 // O card do Atrio não sabe de SQLite, Y.Doc nem arquivo: pede ao `CardHost` do app. Assim o mesmo card serve ao
 // Ideario (notas no banco, com sync) e ao Nodo (nota de um nó, dentro do arquivo do mapa).
 
-import type { Attachment, LinkPreview, Millis, NoteColor, ReminderStatus, RepeatKind, TagCount } from '../types'
+import type { Attachment, LinkPreview, TagCount } from '../types'
 
 /** O que o card mostra e deixa mudar neste app. Desligado = nem aparece (nada de controle que não faz sentido). */
 export interface CardFeatures {
@@ -47,18 +47,6 @@ export function features(off: Partial<CardFeatures> = {}): CardFeatures {
   return { ...ALL_FEATURES, ...off }
 }
 
-/** Os metadados de um card, os mesmos nos dois apps. */
-export interface CardMeta {
-  title: string
-  color: NoteColor
-  emoji: string | null
-  tags: string[]
-  categoryId: string | null
-  reminderAt: Millis | null
-  reminderRepeat: RepeatKind | null
-  status: ReminderStatus | null
-}
-
 /** O que o app fornece ao card. Os métodos de uma função desligada podem faltar. */
 export interface CardHost {
   /** Etiquetas que já existem, para sugerir. */
@@ -81,4 +69,21 @@ export interface CardHost {
   markdownToDoc?: (md: string) => Promise<{ content?: unknown[] } | null>
   /** Imagem da área de transferência do sistema (print colado); null se não houver. */
   clipboardImage?: () => Promise<File | null>
+  /** Endereço de uma foto (miniatura ou tamanho cheio). */
+  imageUrl?: (hash: string, size: 'thumb' | 'full') => string
+  /** Guarda um arquivo pelo caminho no disco (arrastado da área de trabalho, no app). */
+  importPath?: (path: string) => Promise<Attachment>
+  /** Mostra um anexo no visualizador do app (foto, vídeo, PDF…). */
+  openAttachment?: (a: Attachment) => void
+  /** Cria uma categoria (o app pergunta o nome) e devolve o id pela função. */
+  newCategory?: (done: (id: string) => void) => void
+  /** Pergunta um texto (o endereço de um link). Sem isto, usa o `prompt` do navegador. */
+  askText?: (o: { title: string; label: string; confirm: string }) => Promise<string | null>
+  /** Um lembrete acabou de ser marcado. */
+  onReminderSet?: () => void
+  /** Anexos acabaram de entrar no texto (o Ideario gera a prévia de PDFs e vídeos). */
+  afterImport?: (added: Attachment[]) => void
 }
+
+/** Arquivo que chega ao card: do navegador (`File`) ou, no app, pelo caminho no disco. */
+export type DroppedFile = File | { path: string }

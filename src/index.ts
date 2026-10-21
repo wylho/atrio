@@ -9,7 +9,8 @@ export { FILE_ICONS, FILE_LABELS } from './card/icons'
 export { blocksFromMarkdown, plainInline, previewFromMarkdown, previewOf } from './card/markdown'
 export { NOTE_COLORS } from './card/types'
 export type { AttachmentKind, Attachment, LinkPreview, Millis, NoteColor, PreviewBlock, ReminderStatus, RepeatKind, TagCount, Tone } from './types'
-export { ALL_FEATURES, features, type CardFeatures, type CardHost, type CardMeta } from './card/features'
+export { ALL_FEATURES, features, type CardFeatures, type CardHost, type DroppedFile } from './card/features'
+export { emptyMeta, hasStatus, setReminder, setStatus, STATUS, statusOf, type CardMeta } from './card/meta'
 export {
   CARD_FORMAT,
   cardFromHtml,

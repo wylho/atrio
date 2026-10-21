@@ -36,6 +36,15 @@ outro"). Svelte 5 + TypeScript, distribuída como código-fonte por dependência
   cada um claro e escuro; `DESKTOPS` (GNOME, KDE, Windows, macOS), `GNOME_ACCENTS`, `fitAccent`, `cssVars`,
   `NOTE_COLOR_TOKENS`/`resolveNoteColor` e `normalizePaletteId` (lê `ideario`, `nodo` e `mapist` gravados como `atrio`).
   O estado do tema (claro/escuro, ler o sistema) continua em cada app, porque cada núcleo lê o sistema do seu jeito.
+- **0.5.0**: **o card inteiro** (`src/card/NoteEditor.svelte`, em `@wylho/atrio/editor`): capa com emoji, título,
+  texto em blocos (alça, arrastar, menu de cada bloco, tarefas em níveis, tabela, link, Markdown colado), fotos e
+  anexos, gravador e câmera, categoria, lembrete, status, etiquetas, cor e a barra de formatação. Cada parte segue as
+  chaves (`CardFeatures`) e pede ao app pelo `CardHost` (anexos, etiquetas, categorias, prévia de link, perguntar um
+  texto, depois de importar…). Texto num Y.Doc (`ydoc` + `field`) ou num documento comum (`content` + `onbody`).
+  O app usa por `bind:this`: `addFiles`, `settle`, `startRecording`, `openCamera`, `reminder`, `status`,
+  `chooseEmoji`, `hasMedia`, `isEmpty`, `getEditor`; `top` é a barra do app; `onready` sai logo depois da montagem.
+  Regras do card em `src/card/meta.ts` (`CardMeta`, `emptyMeta`, `setReminder`, `setStatus`, `STATUS`, `statusOf`,
+  `hasStatus`). O Ideario usa o card na nota aberta, com tudo ligado (130 e2e).
 - Em uso: o Ideario (v0.2.0) e o Nodo (v0.1.0) já usam o `atrio.css`, o `CardBody` e o card na área de
   transferência (copiar no Ideario e colar no Nodo funciona, e o contrário).
 
@@ -49,7 +58,12 @@ gravações — e cada app liga ou desliga o que faz sentido para ele (**chaves 
 categoria fica desligada e o resto ligado). Ordem prevista:
 1. Contrato do card: um tipo `CardFeatures` (as chaves) e um adaptador `CardHost` que o app implementa (salvar o
    corpo, ler e gravar anexos, listar etiquetas e categorias), para o componente não saber de SQLite, Y.Doc ou arquivo.
-2. (Peças feitas na 0.3.0; falta o componente.) Levar o editor do Ideario (`src/components/Editor.svelte` e `src/lib/editor/`) para cá, atrás do `CardHost`.
-3. Pílulas e seletores (etiquetas, data/lembrete, status, cor, emoji) como componentes daqui.
+2. (Feito na 0.5.0: `NoteEditor`.) Levar o editor do Ideario (`src/components/Editor.svelte` e `src/lib/editor/`) para cá, atrás do `CardHost`.
+3. (Feito na 0.5.0, dentro do card.) Pílulas e seletores (etiquetas, data/lembrete, status, cor, emoji) como componentes daqui.
 4. Anexos e gravações (mídia), por último: dependem do núcleo de cada app.
 5. Separar do `atrio.css` o que é só do Ideario.
+
+## Próximos passos do card
+- O Nodo usar o `NoteEditor` com `features({ category: false })`: precisa dos campos do nó no núcleo do Nodo
+  (etiquetas, lembrete, status, emoji, anexos) e da conversão entre o documento do TipTap e o Markdown da nota.
+- A miniatura do card (`NoteCard` do Ideario: capa, alfinete, seleção) também pode vir para cá.
