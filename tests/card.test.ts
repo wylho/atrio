@@ -91,3 +91,22 @@ describe('pílulas do card', () => {
     unmount(app)
   })
 })
+
+describe('status na lista', () => {
+  it('com onstatus, o card que tem status mostra o seletor e muda por ele; sem status, nada aparece', async () => {
+    const { CardPills } = await import('../src/index')
+    const target = document.createElement('div')
+    const got: string[] = []
+    let app = mount(CardPills, { target, props: { statusOn: true, onstatus: (s: string) => got.push(s) } })
+    flushSync()
+    expect(target.querySelector('.status-toggle')).not.toBeNull()
+    expect(target.textContent).not.toContain('A fazer')
+    ;(target.querySelector('.st-done') as HTMLButtonElement).click()
+    expect(got).toEqual(['done'])
+    unmount(app)
+    app = mount(CardPills, { target, props: { tags: ['x'], onstatus: () => {} } })
+    flushSync()
+    expect(target.querySelector('.status-toggle')).toBeNull()
+    unmount(app)
+  })
+})
