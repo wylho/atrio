@@ -50,8 +50,12 @@ para o que os dois núcleos compartilham (dependência git do Cargo, na mesma ta
   `markdown` (corpo da nota ↔ Markdown, o `markdown.rs` do Ideario, com proptest de ida e volta) e `canon` (forma
   canônica do documento). Versão da crate = versão do `package.json`. O CI testa Svelte e Rust.
 - **0.7.0**: `atrio::text` (`normalize_tag`, `clean_tags`, `clean_emoji`, `REPEATS`), as regras do Ideario.
-- Em uso: o Ideario (v0.2.0) e o Nodo (v0.1.0) já usam o `atrio.css`, o `CardBody` e o card na área de
-  transferência (copiar no Ideario e colar no Nodo funciona, e o contrário).
+- **0.8.0**: `CardPills` (as pílulas do fim do card: lembrete ou status, categoria, anexos, etiquetas; cliques
+  opcionais) e `CardDialog` (a janela do card aberto: tela cheia no celular, diálogo na janela larga, `doc` = modo
+  documento). Os dois apps abrem o card do mesmo jeito.
+- Em uso: o Ideario (card inteiro, `NoteEditor`) e o Nodo (o nó é o card: `CardBody` + `CardPills` no mapa,
+  `CardDialog` + `NoteEditor` ao abrir, com `features({ category: false, attachments: false, capture: false, links: false })`).
+  Copiar no Ideario e colar no Nodo funciona, e o contrário.
 
 ## Rumo (pedido do usuário)
 O Atrio é o **hub**: tudo o que puder ser compartilhado sai daqui, e mudar aqui muda em todos os apps ligados a ele

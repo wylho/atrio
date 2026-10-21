@@ -74,3 +74,20 @@ describe('NoteEditor', () => {
     expect(NoteEditor).toBeTypeOf('function')
   })
 })
+
+describe('pílulas do card', () => {
+  it('lembrete tem precedência sobre o status; sem lembrete, o status aparece; etiquetas por último', async () => {
+    const { CardPills } = await import('../src/index')
+    const target = document.createElement('div')
+    let app = mount(CardPills, { target, props: { statusOn: true, reminderDoing: true, tags: ['viagem'] } })
+    flushSync()
+    expect(target.textContent).toContain('Em andamento')
+    expect(target.querySelector('.pill.tag')?.textContent).toBe('#viagem')
+    unmount(app)
+    app = mount(CardPills, { target, props: { reminderAt: Date.now() - 60_000, statusOn: true } })
+    flushSync()
+    expect(target.querySelector('.pill.late')).not.toBeNull()
+    expect(target.textContent).not.toContain('A fazer')
+    unmount(app)
+  })
+})

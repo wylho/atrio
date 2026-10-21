@@ -22,6 +22,8 @@ export {
 } from './clipboard'
 
 // Peças de interface do card
+export { default as CardDialog } from './card/CardDialog.svelte'
+export { default as CardPills } from './card/CardPills.svelte'
 export { default as AudioPlayer } from './ui/AudioPlayer.svelte'
 export { default as CameraDialog } from './ui/CameraDialog.svelte'
 export { default as ContextMenu } from './ui/ContextMenu.svelte'
