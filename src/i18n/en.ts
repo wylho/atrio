@@ -217,4 +217,6 @@ export const EN: Record<string, string> = {
   'Não foi possível abrir este PDF aqui. Baixe para abrir no aplicativo do sistema.':
     "Couldn't open this PDF here. Download it to open in the system app.",
   '{atual} de {total}': '{atual} of {total}',
+  '+{n} linha': '+{n} row',
+  '+{n} linhas': '+{n} rows',
 }

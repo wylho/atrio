@@ -62,6 +62,11 @@ export type PreviewBlock =
   | { kind: 'code'; text: string }
   /** Cartão de link: título (ou endereço) e o site. */
   | { kind: 'link'; text: string; url: string; site: string }
+  /**
+   * Tabela: as primeiras linhas (até 8), célula por célula; `header` quando a primeira linha é de títulos; `more` =
+   * linhas que ficaram de fora. `text` é a tabela em texto ("a · b" por linha), para a busca e o tamanho da prévia.
+   */
+  | { kind: 'table'; rows: string[][]; header: boolean; more: number; text: string }
   /** Tarefas que não couberam na prévia, ou texto cortado. */
   | { kind: 'more'; count: number }
 

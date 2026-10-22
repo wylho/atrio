@@ -29,7 +29,7 @@ describe('prévia de Markdown (as regras do Ideario)', () => {
       { kind: 'task', text: 'Feita', done: true, depth: 0 },
       { kind: 'task', text: 'Aberta', done: false, depth: 0 },
       { kind: 'code', text: 'código' },
-      { kind: 'text', text: 'Arroz · 2 kg' },
+      { kind: 'table', rows: [['Arroz', '2 kg']], header: true, more: 0, text: 'Arroz · 2 kg' },
     ])
   })
 
@@ -73,6 +73,25 @@ describe('card na área de transferência', () => {
 })
 
 describe('CardBody', () => {
+  it('tabela: as primeiras 8 linhas como tabela, com a de títulos; o resto conta', () => {
+    const md = ['| Produto | Preço |', '|---|:--|', ...Array.from({ length: 10 }, (_, i) => `| Item ${i + 1} | R$ ${i} |`), '', 'Fim.'].join('\n')
+    const [table, after] = blocksFromMarkdown(md)
+    expect(table).toMatchObject({ kind: 'table', header: true, more: 3 })
+    expect(table.kind === 'table' && table.rows[0]).toEqual(['Produto', 'Preço'])
+    expect(table.kind === 'table' && table.rows).toHaveLength(8)
+    expect(table.kind === 'table' && table.text).toContain('Item 10 · R$ 9')
+    expect(after).toEqual({ kind: 'text', text: 'Fim.' })
+  })
+
+  it('o card desenha a tabela', () => {
+    const target = document.createElement('div')
+    const app = mount(CardBody, { target, props: { title: 'Produtos', blocks: previewFromMarkdown('| A | B |\n|---|---|\n| 1 | 2 |') } })
+    flushSync()
+    expect([...target.querySelectorAll('.pv-table th')].map((e) => e.textContent)).toEqual(['A', 'B'])
+    expect([...target.querySelectorAll('.pv-table td')].map((e) => e.textContent)).toEqual(['1', '2'])
+    unmount(app)
+  })
+
   it('mostra título, blocos e hashtags com a marcação do card do Ideario', () => {
     const target = document.createElement('div')
     const app = mount(CardBody, { target, props: { title: 'Descoberta', blocks: previewFromMarkdown('- 12 entrevistas #pesquisa\n- [x] Roteiro') } })

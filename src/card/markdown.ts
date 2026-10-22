@@ -38,6 +38,8 @@ const MAX_BLOCKS = 24
 const MAX_TASKS = 12
 const MAX_CHARS = 1200
 const MAX_CODE_LINES = 8
+/** Linhas de uma tabela na prévia, como `MAX_TABLE_ROWS` em projection.rs. */
+const MAX_TABLE_ROWS = 8
 
 /** Tira a marcação de linha: a prévia do Ideario também mostra só o texto. */
 export function plainInline(s: string): string {
@@ -64,7 +66,21 @@ export function blocksFromMarkdown(md: string): PreviewBlock[] {
     if (text) out.push({ kind: 'text', text })
     para = []
   }
+  // Tabela em andamento: as linhas lidas e se a segunda foi a de traços (a primeira é de títulos).
+  let table: string[][] | null = null
+  let tableHeader = false
+  const flushTable = () => {
+    if (!table) return
+    const all = table.filter((cells) => cells.some(Boolean))
+    if (all.length) {
+      const text = all.map((cells) => cells.filter(Boolean).join(' · ')).join('\n')
+      out.push({ kind: 'table', rows: all.slice(0, MAX_TABLE_ROWS), header: tableHeader, more: Math.max(0, all.length - MAX_TABLE_ROWS), text })
+    }
+    table = null
+    tableHeader = false
+  }
   for (const raw of md.replace(/\r\n?/g, '\n').split('\n')) {
+    if (!code && !raw.trim().startsWith('|')) flushTable()
     if (/^\s*(```|~~~)/.test(raw)) {
       if (code) {
         const text = code.join('\n').trimEnd().split('\n').slice(0, MAX_CODE_LINES).join('\n')
@@ -110,10 +126,12 @@ export function blocksFromMarkdown(md: string): PreviewBlock[] {
     } else if ((m = line.match(/^>\s?(.*)$/))) {
       para.push(m[1])
     } else if (line.startsWith('|')) {
-      // Tabela: uma linha da prévia por linha da tabela ("Arroz · 2 kg"); a linha de traços some.
+      // Tabela: aparece como tabela no card; a linha de traços diz que a primeira é de títulos.
       flush()
-      const cells = line.split('|').map((c) => plainInline(c)).filter(Boolean)
-      if (cells.length && !cells.every((c) => /^:?-{2,}:?$/.test(c))) out.push({ kind: 'text', text: cells.join(' · ') })
+      const cells = line.replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => plainInline(c))
+      if (cells.every((c) => /^:?-{2,}:?$/.test(c))) {
+        if (table?.length === 1) tableHeader = true
+      } else (table ??= []).push(cells)
     } else {
       para.push(line)
     }
@@ -122,6 +140,7 @@ export function blocksFromMarkdown(md: string): PreviewBlock[] {
     const text = code.join('\n').trimEnd().split('\n').slice(0, MAX_CODE_LINES).join('\n')
     if (text.trim()) out.push({ kind: 'code', text })
   }
+  flushTable()
   flush()
   return out
 }

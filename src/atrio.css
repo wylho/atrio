@@ -835,6 +835,13 @@ button { cursor: pointer; }
 .preview .pv-task .box { margin-top: 3px; width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid currentColor; display: grid; place-items: center; flex: none; opacity: .8; }
 .preview .pv-task.done { color: var(--muted); text-decoration: line-through; }
 .preview .pv-more { color: var(--muted); font-size: 12px; padding-left: 22px; }
+/* Tabela na prévia: a mesma moldura da tabela do editor, menor, com as colunas dividindo a largura do card. */
+.pv-table { border-collapse: collapse; width: 100%; table-layout: fixed; font-size: 12.5px; line-height: 1.35; flex: none; }
+.pv-table th, .pv-table td {
+  border: 1px solid var(--card-edge); padding: 3px 6px; vertical-align: top; text-align: left; overflow-wrap: anywhere;
+}
+.pv-table th { font-weight: 600; background: color-mix(in srgb, var(--fg) 5%, transparent); }
+.preview .pv-table-more { padding-left: 0; }
 .preview .hashtag, .card .hashtag { color: var(--accent); font-weight: 500; }
 .pill.cat:hover { background: rgb(127 140 135 / .26); }
 

@@ -12,6 +12,8 @@ const MAX_BLOCKS: usize = 24;
 const MAX_TASKS: usize = 12;
 const MAX_CHARS: usize = 1200;
 const MAX_CODE_LINES: usize = 8;
+/// Linhas de uma tabela na prévia; as outras viram "+N linhas".
+const MAX_TABLE_ROWS: usize = 8;
 
 /// Bloco da prévia do card, na ordem do documento (o mesmo formato de `PreviewBlock` em src/lib/types.ts).
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -47,6 +49,15 @@ pub enum Block {
     Code {
         text: String,
     },
+    /// Tabela: as primeiras linhas, célula por célula (vazias ficam, para as colunas não andarem); `header` quando a
+    /// primeira linha é de títulos; `more` = linhas que não entraram. `text` é a tabela em texto ("a · b" por linha),
+    /// para a busca, as `#tags` e o limite de tamanho da prévia.
+    Table {
+        rows: Vec<Vec<String>>,
+        header: bool,
+        more: usize,
+        text: String,
+    },
     /// Cartão de link: o título (ou o endereço) e o site.
     Link {
         text: String,
@@ -68,6 +79,7 @@ impl Block {
             Block::Task { text, .. }
             | Block::File { text, .. }
             | Block::Code { text }
+            | Block::Table { text, .. }
             | Block::Link { text, .. } => Some(text),
             Block::More { .. } => None,
         }
@@ -206,19 +218,38 @@ fn block(
             }
         }
         "bulletList" | "orderedList" | "taskList" => list_items(n, depth, p, file),
-        // Tabela: uma linha da prévia por linha da tabela ("Arroz · 2 kg").
+        // Tabela: aparece como tabela no card (as primeiras linhas); o texto dela vai para a busca.
         "table" => {
-            for row in children(n) {
-                let cells: Vec<String> = children(row)
+            let all: Vec<Vec<String>> = children(n)
+                .iter()
+                .map(|row| children(row).iter().map(|c| clean(&inline(c))).collect())
+                .filter(|cells: &Vec<String>| cells.iter().any(|c| !c.is_empty()))
+                .collect();
+            if !all.is_empty() {
+                let header = children(n)
+                    .first()
+                    .map(|row| children(row).iter().any(|c| kind(c) == "tableHeader"))
+                    .unwrap_or(false);
+                let text = all
                     .iter()
-                    .map(|c| clean(&inline(c)))
-                    .filter(|t| !t.is_empty())
-                    .collect();
-                if !cells.is_empty() {
-                    p.blocks.push(Block::Text {
-                        text: cells.join(" · "),
-                    });
-                }
+                    .map(|cells| {
+                        cells
+                            .iter()
+                            .filter(|c| !c.is_empty())
+                            .cloned()
+                            .collect::<Vec<_>>()
+                            .join(" · ")
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                let more = all.len().saturating_sub(MAX_TABLE_ROWS);
+                let rows = all.into_iter().take(MAX_TABLE_ROWS).collect();
+                p.blocks.push(Block::Table {
+                    rows,
+                    header,
+                    more,
+                    text,
+                });
             }
         }
         "codeBlock" => {
@@ -376,7 +407,7 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn table_rows_are_preview_lines_and_quotes_are_text() {
+    fn a_table_is_a_table_in_the_preview_and_quotes_are_text() {
         let body = json!({"type":"doc","content":[
             {"type":"table","content":[
                 {"type":"tableRow","content":[
@@ -391,11 +422,14 @@ mod tests {
         assert_eq!(
             p.blocks,
             vec![
-                Block::Text {
-                    text: "Item · Qtd".into()
-                },
-                Block::Text {
-                    text: "Arroz".into()
+                Block::Table {
+                    rows: vec![
+                        vec!["Item".into(), "Qtd".into()],
+                        vec!["Arroz".into(), "".into()]
+                    ],
+                    header: true,
+                    more: 0,
+                    text: "Item · Qtd\nArroz".into(),
                 },
                 Block::Text {
                     text: "citação #ideia".into()
@@ -403,6 +437,29 @@ mod tests {
             ]
         );
         assert_eq!(p.hash_tags, vec!["ideia".to_string()]);
+        // A busca continua achando o que está na tabela.
+        assert!(p.text.contains("Arroz"));
+    }
+
+    #[test]
+    fn a_long_table_shows_its_first_rows_and_counts_the_rest() {
+        let row = |a: &str| {
+            json!({"type":"tableRow","content":[
+            {"type":"tableCell","content":[{"type":"paragraph","content":[{"type":"text","text":a}]}]}]})
+        };
+        let rows: Vec<Value> = (1..=11).map(|i| row(&format!("Linha {i}"))).collect();
+        let body = json!({"type":"doc","content":[{"type":"table","content":rows}]});
+        let p = project(&body, &|_| None);
+        let Block::Table {
+            rows, header, more, ..
+        } = &p.preview[0]
+        else {
+            panic!("esperava a tabela: {:?}", p.preview)
+        };
+        assert_eq!(rows.len(), 8);
+        assert_eq!(*more, 3);
+        assert!(!header, "sem tableHeader, a primeira linha é comum");
+        assert!(p.text.contains("Linha 11"), "a busca vê a tabela inteira");
     }
 
     #[test]

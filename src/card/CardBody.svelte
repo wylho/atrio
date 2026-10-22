@@ -57,6 +57,19 @@
           <p class="pv-link"><Link2 size={14} /><span class="pv-link-t">{b.text}</span><span class="pv-link-s">{b.site}</span></p>
         {:else if b.kind === 'code'}
           <pre class="pv-code">{b.text}</pre>
+        {:else if b.kind === 'table'}
+          <table class="pv-table">
+            <tbody>
+              {#each b.rows as row, r (r)}
+                <tr>
+                  {#each row as cell, c (c)}
+                    {#if b.header && r === 0}<th>{@render rich(cell)}</th>{:else}<td>{@render rich(cell)}</td>{/if}
+                  {/each}
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+          {#if b.more}<p class="pv-more pv-table-more">{tn(b.more, '+{n} linha', '+{n} linhas')}</p>{/if}
         {:else if b.kind === 'bullet' || b.kind === 'ordered'}
           <p class="pv-li" style:--depth={b.depth} data-mark={b.kind === 'ordered' ? `${b.n}.` : '•'}>{@render rich(b.text)}</p>
         {:else}

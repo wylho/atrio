@@ -111,6 +111,10 @@ para o que os dois núcleos compartilham (dependência git do Cargo, na mesma ta
   copiar): `cardsToClipboard`, `cardsFromHtml`, `readCards`, `writeCards`, `readClipboardCards`; um `<div
   data-atrio-card>` por card, o Markdown de todos em sequência. As funções de um card lêem o primeiro, então uma versão
   antiga de um app cola o primeiro card.
+- **0.20.0**: **tabela de verdade na prévia do card** (pedido do usuário: no card fechado a tabela virava "a · b · c"):
+  bloco `Table` (`rows`, `header`, `more`, `text`) em `projection.rs` e `kind: 'table'` em `markdown.ts`/`types.ts`, as
+  primeiras 8 linhas (`MAX_TABLE_ROWS`) e "+N linhas"; o `text` ("a · b" por linha) segue na busca, nas `#tags` e no
+  limite da prévia. `CardBody` desenha `<table class="pv-table">` (CSS em `atrio.css`, a moldura da tabela do editor).
 - Em uso: o Ideario (card inteiro, `NoteEditor`) e o Nodo (o nó é o card: `CardBody` + `CardPills` no mapa,
   `CardDialog` + `NoteEditor` ao abrir, com `features({ category: false, links: false })`: fotos, arquivos, câmera e
   gravador entram no `.nodo`, um zip com os anexos).
