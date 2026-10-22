@@ -16,6 +16,34 @@ export const NOTE_COLORS: { id: NoteColor; label: string; css: string }[] = [
   { id: 'butter', label: 'Manteiga', css: 'var(--n-butter)' },
 ]
 
+/**
+ * A cor de nota mais próxima de uma cor qualquer (`#rrggbb`), pelo tom: vermelho e rosa → rosa, laranja e marrom →
+ * areia, amarelo → manteiga, verde e verde-azulado → sálvia, azul → céu, roxo → lilás; cinza (pouca saturação) ou
+ * inválida → padrão. A mesma ideia do Ideario ao importar as cores do Keep, para um tópico do Nodo pintado de qualquer
+ * cor ganhar o card padrão na cor mais próxima.
+ */
+export function nearestNoteColor(hex: string | null | undefined): NoteColor {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex?.trim() ?? '')
+  if (!m) return 'none'
+  const n = parseInt(m[1], 16)
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => v / 255)
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  const l = (max + min) / 2
+  const d = max - min
+  const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1))
+  if (s < 0.15) return 'none'
+  let h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4
+  h = (h * 60 + 360) % 360
+  if (h < 18 || h >= 330) return 'rose'
+  if (h < 42) return 'sand'
+  if (h < 70) return 'butter'
+  if (h < 185) return 'sage'
+  if (h < 255) return 'sky'
+  if (h < 300) return 'lilac'
+  return 'rose'
+}
+
 export type AttachmentKind = 'image' | 'pdf' | 'doc' | 'sheet' | 'audio' | 'video' | 'other'
 
 /**

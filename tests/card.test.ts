@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { flushSync, mount, unmount } from 'svelte'
-import { emptyMeta, features, hashTags, hasStatus, NoteCard, setReminder, setStatus, statusOf, type CardSummary } from '../src/index'
+import { emptyMeta, features, hashTags, nearestNoteColor, hasStatus, NoteCard, setReminder, setStatus, statusOf, type CardSummary } from '../src/index'
 import { NoteEditor } from '../src/editor'
 import Harness from './NoteEditorHarness.svelte'
 
@@ -180,6 +180,14 @@ describe('o card (miniatura), o mesmo em todos os apps', () => {
 
   it('#tags do texto: na ordem, sem repetir (como o núcleo)', () => {
     expect(hashTags('Ver #Casa e #casa, #compras')).toEqual(['casa', 'compras'])
+  })
+})
+
+describe('cor de nota mais próxima', () => {
+  it('cada tom vai para a cor do Atrio mais parecida; cinza fica no padrão', () => {
+    expect(['#e8c547', '#f0a36b', '#e5818d', '#5aa0f2', '#a78bfa', '#5bb974', '#888888', 'nada'].map(nearestNoteColor)).toEqual([
+      'butter', 'sand', 'rose', 'sky', 'lilac', 'sage', 'none', 'none',
+    ])
   })
 })
 
