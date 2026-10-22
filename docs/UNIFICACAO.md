@@ -230,7 +230,7 @@ Cada fase termina com os dois apps na mesma tag e verificados.
    do tópico no mapa saem da mesma paleta (`NOTE_COLORS`/tokens do tema do Atrio), em tudo.
 2. ~~Abrir o card~~ **Decidido:** é experiência de cada app, não da biblioteca: um clique no Ideario, duplo clique
    (ou ⌘Enter) no Nodo. O `NoteCard` do Atrio recebe `onopen` e cada app liga ao gesto dele.
-3. **Notas soltas do Nodo** viram o mesmo card?
+3. ~~Notas soltas~~ **Decidido:** "Nova nota aqui" cria o card padrão (o mapa é um canvas; a nota é a nota padrão).
 4. ~~Hash dos anexos~~ **Decidido:** o código dos anexos é **do Atrio** (`atrio::attach`), partindo da versão pronta
    do Ideario (SHA-256 inteiro, tabelas de tipo/MIME, nomes, protocolo com Range e miniatura), usada igual em tudo.
 5. ~~Ideario em pnpm~~ **Decidido:** sim.

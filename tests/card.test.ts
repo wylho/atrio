@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { flushSync, mount, unmount } from 'svelte'
-import { emptyMeta, features, hasStatus, setReminder, setStatus, statusOf } from '../src/index'
+import { emptyMeta, features, hashTags, hasStatus, NoteCard, setReminder, setStatus, statusOf, type CardSummary } from '../src/index'
 import { NoteEditor } from '../src/editor'
 import Harness from './NoteEditorHarness.svelte'
 
@@ -129,3 +129,57 @@ describe('anexo no card', () => {
     unmount(app)
   })
 })
+
+describe('o card (miniatura), o mesmo em todos os apps', () => {
+  const base: CardSummary = {
+    title: 'Viagem', emoji: null, color: 'sky', preview: [{ kind: 'text', text: 'Levar protetor' }], cover: [],
+    imageCount: 0, fileCount: 0, tags: [], reminderAt: null, reminderRepeat: null, reminderDone: false,
+    reminderDoing: false, statusOn: false,
+  }
+  function show(props: Record<string, unknown>) {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const app = mount(NoteCard, { target, props: { thumb: (h: string) => `thumb/${h}`, ...props } as never })
+    flushSync()
+    return { el: target.firstElementChild as HTMLElement, done: () => unmount(app) }
+  }
+
+  it('capa na proporção de cada foto, com +N para as que não cabem', () => {
+    const { el, done } = show({ card: { ...base, cover: [{ hash: 'a1', width: 800, height: 600 }], imageCount: 3 } })
+    expect(el.className).toContain('c-sky')
+    const img = el.querySelector('.card-media img') as HTMLImageElement
+    expect(img.getAttribute('src')).toBe('thumb/a1')
+    expect(img.style.aspectRatio).toMatch(/^1\.333/)
+    expect(el.querySelector('.card-media .more')?.textContent).toBe('+2')
+    done()
+  })
+
+  it('nota que é só um anexo vira a miniatura do arquivo, com o nome', () => {
+    const card = { ...base, preview: [{ kind: 'file', text: 'roteiro.pdf', fileKind: 'pdf', hash: 'f1' }], fileCount: 1 }
+    const { el, done } = show({ card, fileThumb: (h: string) => `prev/${h}` })
+    expect(el.querySelector('.card-file.t-pdf img.file-preview')?.getAttribute('src')).toBe('prev/f1')
+    expect(el.querySelector('.card-file-name')?.textContent).toBe('roteiro.pdf')
+    expect(el.querySelector('.card-meta'), 'o anexo não conta como pílula no card só-arquivo').toBeNull()
+    done()
+  })
+
+  it('abrir e marcar são do app; sem as funções, o card não mostra a marca nem o alfinete', () => {
+    const calls: string[] = []
+    const a = show({ card: base, onopen: () => calls.push('abrir') })
+    expect(a.el.querySelector('.card-check')).toBeNull()
+    expect(a.el.querySelector('.card-pin')).toBeNull()
+    a.el.click()
+    a.done()
+    const b = show({ card: base, onopen: () => calls.push('abrir'), onselect: () => calls.push('marcar'), onpin: () => calls.push('fixar'), selecting: true })
+    b.el.click()
+    ;(b.el.querySelector('.card-check') as HTMLElement).click()
+    expect(b.el.querySelector('.card-pin'), 'com seleção em andamento, sem alfinete').toBeNull()
+    b.done()
+    expect(calls).toEqual(['abrir', 'marcar', 'marcar'])
+  })
+
+  it('#tags do texto: na ordem, sem repetir (como o núcleo)', () => {
+    expect(hashTags('Ver #Casa e #casa, #compras')).toEqual(['casa', 'compras'])
+  })
+})
+

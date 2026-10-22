@@ -70,7 +70,10 @@ export function toLocalInput(ms: Millis): string {
 export const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
 
 /** Tags digitadas como `#palavra` no texto. */
-export const hashTags = (text: string) => [...text.matchAll(/(?:^|[^\p{L}\d_])#([\p{L}\d_-]+)/gu)].map((m) => m[1].toLowerCase())
+/** As `#tags` do texto, em minúsculas, na ordem, sem repetir (como `atrio::text::hash_tags`). */
+export const hashTags = (text: string) => [
+  ...new Set([...text.matchAll(/(?:^|[^\p{L}\d_])#([\p{L}\d_-]+)/gu)].map((m) => m[1].toLowerCase())),
+]
 
 export const normalizeTag = (raw: string) => raw.trim().replace(/^#+/, '').replace(/\s+/g, '-').toLowerCase()
 

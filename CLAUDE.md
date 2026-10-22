@@ -76,6 +76,11 @@ para o que os dois núcleos compartilham (dependência git do Cargo, na mesma ta
   WebP, miniatura, paleta e tom), `atrio::card` (`CardStatus`, `Status`, `set_status`/`complete`/`clear_status`,
   `next_occurrence`: as regras de `meta.ts`) e `atrio::projection` (a prévia do card, **a única**; teste de
   propriedade: documento e o Markdown dele dão a mesma prévia). O CI testa com todas as features.
+- **0.14.0** (unificação, fase 3, o card): **`NoteCard`**, o card inteiro (miniatura) que o Ideario mostrava: moldura
+  na cor da nota, capa na proporção de cada foto com "+N", nota que é só um anexo (miniatura do arquivo), marcar e
+  fixar (só quando o app passa `onselect`/`onpin`), `CardBody` + `CardPills`. O app passa o resumo (`CardSummary`),
+  as miniaturas (`thumb`, `fileThumb`) e o que fazer ao abrir (o gesto é do app); o resto das propriedades vai para a
+  moldura (gatilho do `ContextMenu`, `style`, `data-*`). `hashTags` passa a tirar repetidas, como o núcleo.
 - Em uso: o Ideario (card inteiro, `NoteEditor`) e o Nodo (o nó é o card: `CardBody` + `CardPills` no mapa,
   `CardDialog` + `NoteEditor` ao abrir, com `features({ category: false, links: false })`: fotos, arquivos, câmera e
   gravador entram no `.nodo`, um zip com os anexos).
