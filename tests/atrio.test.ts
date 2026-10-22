@@ -74,3 +74,24 @@ describe('CardBody', () => {
     unmount(app)
   })
 })
+
+describe('anexos na prévia em Markdown (o Nodo)', () => {
+  it('a primeira linha de fotos vira a capa; arquivo vira linha com ícone; foto não vira texto', async () => {
+    const { coverFromMarkdown } = await import('../src/index')
+    const md = [
+      'Roteiro da viagem',
+      '',
+      '![praia.jpg](ideario://att/aaaa1111) ![serra.jpg](ideario://att/bbbb2222)',
+      '',
+      '[📎 passagens.pdf](ideario://att/cccc3333)',
+      '',
+      '![depois.jpg](ideario://att/dddd4444)',
+    ].join('\n')
+    expect(coverFromMarkdown(md)).toEqual(['aaaa1111', 'bbbb2222'])
+    expect(coverFromMarkdown('só texto')).toEqual([])
+    expect(blocksFromMarkdown(md)).toEqual([
+      { kind: 'text', text: 'Roteiro da viagem' },
+      { kind: 'file', text: 'passagens.pdf', fileKind: 'pdf', hash: 'cccc3333' },
+    ])
+  })
+})

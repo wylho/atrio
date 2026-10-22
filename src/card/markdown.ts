@@ -3,7 +3,36 @@
 // texto sem formatação (negrito, itálico e links viram texto), linhas seguidas formam um parágrafo, listas e tarefas
 // com profundidade, código com até 8 linhas, e os limites de `preview_of`.
 
-import type { PreviewBlock } from './types'
+import type { AttachmentKind, PreviewBlock } from './types'
+
+/** Endereço dos anexos no Markdown das notas (o mesmo de `atrio::markdown::ATT`). */
+const ATT = 'ideario://att/'
+const IMAGE = /!\[[^\]]*\]\(ideario:\/\/att\/([0-9a-f]+)\)/g
+/** Uma linha só de fotos (uma, ou uma fileira lado a lado). */
+const IMAGE_LINE = /^(?:!\[[^\]]*\]\(ideario:\/\/att\/[0-9a-f]+\)\s*)+$/
+/** Um anexo que não é foto: `[📎 nome](ideario://att/<hash>)`. */
+const FILE_LINE = /^\[📎\s*(.*?)\]\(ideario:\/\/att\/([0-9a-f]+)\)$/
+
+/** O tipo de um anexo pela extensão do nome (no Markdown só vem o nome). */
+function kindOfName(name: string): AttachmentKind {
+  const ext = name.split('.').pop()?.toLowerCase() ?? ''
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'svg'].includes(ext)) return 'image'
+  if (['mp3', 'm4a', 'ogg', 'oga', 'wav', 'aac', 'flac'].includes(ext)) return 'audio'
+  if (['mp4', 'm4v', 'mov', 'webm', 'mkv'].includes(ext)) return 'video'
+  if (ext === 'pdf') return 'pdf'
+  if (['doc', 'docx', 'odt', 'rtf', 'txt', 'md', 'pages'].includes(ext)) return 'doc'
+  if (['xls', 'xlsx', 'ods', 'csv', 'numbers'].includes(ext)) return 'sheet'
+  return 'other'
+}
+
+/** A capa do card, como no Ideario: a primeira foto ou a primeira fileira de fotos da nota (os hashes). */
+export function coverFromMarkdown(md: string): string[] {
+  for (const raw of md.replace(/\r\n?/g, '\n').split('\n')) {
+    const line = raw.trim()
+    if (line.startsWith(`![`) && line.includes(ATT) && IMAGE_LINE.test(line)) return [...line.matchAll(IMAGE)].map((m) => m[1])
+  }
+  return []
+}
 
 const MAX_BLOCKS = 24
 const MAX_TASKS = 12
@@ -57,6 +86,12 @@ export function blocksFromMarkdown(md: string): PreviewBlock[] {
     let m: RegExpMatchArray | null
     if (!line || /^([-*_])(\s*\1){2,}$/.test(line)) {
       flush()
+    } else if (IMAGE_LINE.test(line)) {
+      // Fotos não entram na prévia: a primeira vira a capa (`coverFromMarkdown`), como no Ideario.
+      flush()
+    } else if ((m = line.match(FILE_LINE))) {
+      flush()
+      out.push({ kind: 'file', text: plainInline(m[1]) || 'arquivo', fileKind: kindOfName(m[1]), hash: m[2] })
     } else if ((m = line.match(/^#{1,6}\s+(.*?)\s*#*$/))) {
       flush()
       const text = plainInline(m[1])

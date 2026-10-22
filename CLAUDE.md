@@ -55,6 +55,9 @@ para o que os dois núcleos compartilham (dependência git do Cargo, na mesma ta
   documento). Os dois apps abrem o card do mesmo jeito.
 - **0.9.0**: `CardPills` com `onstatus`: o card que tem status (ou lembrete) mostra o seletor de três cores e muda
   ali mesmo (pedido do usuário: mudar o status na lista, sem abrir a nota).
+- **0.10.0**: a prévia em Markdown trata anexos como o Ideario: a primeira linha de fotos vira a capa
+  (`coverFromMarkdown`, os hashes) e sai do texto; `[📎 nome](ideario://att/…)` vira o bloco de arquivo com o ícone
+  do tipo (pela extensão do nome).
 - Em uso: o Ideario (card inteiro, `NoteEditor`) e o Nodo (o nó é o card: `CardBody` + `CardPills` no mapa,
   `CardDialog` + `NoteEditor` ao abrir, com `features({ category: false, attachments: false, capture: false, links: false })`).
   Copiar no Ideario e colar no Nodo funciona, e o contrário.
