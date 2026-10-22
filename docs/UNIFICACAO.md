@@ -173,6 +173,22 @@ Falta:
   --no-cluster` em cada repositório (`graphify-out/` fica no `.git/info/exclude`) e cruzar os rótulos dos três
   `graph.json`. É o que mostra rápido se sobrou função com o mesmo nome dos dois lados.
 
+## Andamento
+
+- **Fase 1 — feita (Atrio 0.12.0):** o Ideario usa a crate; saíram as cópias de `markdown`, `canon`, `testdoc` e
+  `text`.
+- **Fase 2 — feita (Atrio 0.13.0):** `atrio::attach`, `atrio::media`, `atrio::card`, `atrio::projection`.
+  - O Ideario usa as quatro; saíram `media.rs` e `projection.rs`.
+  - O Nodo passou a fazer como o Ideario:
+    - anexos com hash único e pipeline de fotos, com miniatura no `.nodo`;
+    - status com repetição, inclusive pelo MCP;
+    - a prévia vem do núcleo;
+    - `#tags` e contagem de anexos nas pílulas;
+    - busca sem acento.
+  - Corrige os defeitos 1 a 5.
+  - Ficou para a fase 3: `hashTags` do TypeScript não tira repetidas (o Rust tira); os backends simulados do
+    navegador (`lib/api/mock` do Ideario e `lib/preview.ts` do Nodo) ainda montam a prévia em TypeScript.
+
 ## Ordem proposta
 
 Cada fase termina com os dois apps na mesma tag e verificados.
