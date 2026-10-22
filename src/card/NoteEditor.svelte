@@ -571,8 +571,15 @@
     }
     for (const a of added) if (a.kind !== 'image') nodes.push({ type: 'noteFile', attrs: { hash: a.hash } })
     nodes.push({ type: 'paragraph' })
-    const chain = editor.chain().focus()
-    ;(pos == null ? chain : chain.setTextSelection(pos)).insertContent(nodes).run()
+    if (pos != null) {
+      editor.chain().focus().setTextSelection(pos).insertContent(nodes).run()
+      return
+    }
+    // Anexo é sempre um bloco do texto: com o cursor numa lista (ou citação, tabela), entra logo depois dela, não
+    // dentro do item.
+    const from = editor.state.selection.$from
+    if (from.depth > 1) editor.chain().focus().insertContentAt(from.after(1), nodes).run()
+    else editor.chain().focus().insertContent(nodes).run()
   }
 
   function pick(input: HTMLInputElement | undefined) {

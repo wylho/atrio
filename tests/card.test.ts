@@ -110,3 +110,22 @@ describe('status na lista', () => {
     unmount(app)
   })
 })
+
+describe('anexo no card', () => {
+  it('com o cursor numa lista, a foto entra depois da lista, como bloco do texto (não dentro do item)', async () => {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const content = { type: 'doc', content: [{ type: 'taskList', content: [
+      { type: 'taskItem', attrs: { checked: false }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Reservar hotel' }] }] },
+    ] }] }
+    const app = mount(Harness, { target, props: { features: features(), content } })
+    await new Promise((r) => setTimeout(r, 50))
+    flushSync()
+    const h = app as unknown as { caretAtEnd(): void; addFiles(f: { blob: Blob; name: string }[]): void; json(): { content: { type: string }[] } }
+    h.caretAtEnd()
+    h.addFiles([{ blob: new Blob(['abc'], { type: 'image/png' }), name: 'praia.png' }])
+    await new Promise((r) => setTimeout(r, 50))
+    expect(h.json().content.map((n) => n.type)).toEqual(['taskList', 'noteImage', 'paragraph'])
+    unmount(app)
+  })
+})

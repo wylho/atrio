@@ -58,8 +58,11 @@ para o que os dois núcleos compartilham (dependência git do Cargo, na mesma ta
 - **0.10.0**: a prévia em Markdown trata anexos como o Ideario: a primeira linha de fotos vira a capa
   (`coverFromMarkdown`, os hashes) e sai do texto; `[📎 nome](ideario://att/…)` vira o bloco de arquivo com o ícone
   do tipo (pela extensão do nome).
+- **0.11.0**: foto, arquivo ou gravação com o cursor numa lista (ou citação, tabela) entra logo **depois** do bloco,
+  como bloco do texto, não dentro do item (antes a foto ia para dentro da tarefa e a prévia do Nodo a perdia).
 - Em uso: o Ideario (card inteiro, `NoteEditor`) e o Nodo (o nó é o card: `CardBody` + `CardPills` no mapa,
-  `CardDialog` + `NoteEditor` ao abrir, com `features({ category: false, attachments: false, capture: false, links: false })`).
+  `CardDialog` + `NoteEditor` ao abrir, com `features({ category: false, links: false })`: fotos, arquivos, câmera e
+  gravador entram no `.nodo`, um zip com os anexos).
   Copiar no Ideario e colar no Nodo funciona, e o contrário.
 
 ## Rumo (pedido do usuário)
