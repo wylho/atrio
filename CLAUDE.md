@@ -23,6 +23,8 @@ para o que os dois núcleos compartilham (dependência git do Cargo, na mesma ta
 - Versão: subir a `version` do `package.json` e a do `crates/atrio/Cargo.toml` juntas; o workflow `CI` testa e cria a tag `vX.Y.Z` no GitHub (daqui o
   proxy não deixa empurrar tag). Os apps apontam para a tag.
 - Git: commit e push no `main` ao terminar cada tarefa.
+- Licença **GPL-3.0-or-later**, a mesma do Ideario e do Nodo (escolha do usuário, 22/10/2026); até a 0.18.1 o Atrio
+  saiu como MIT.
 
 ## Estado atual
 - **0.1.0**: `atrio.css` (cópia do `app.css` do Ideario, ainda inteiro: inclui estilos que só o Ideario usa; separar
@@ -104,6 +106,7 @@ para o que os dois núcleos compartilham (dependência git do Cargo, na mesma ta
   `t(label)` (os apps também). Datas e tamanhos seguem `intlLocale()` ("Today, 9:00", "5 min ago", "1.5 MB"); o
   seletor de emoji carrega o `emojibase-data/en` em inglês. Testes rodam em português (`tests/setup.ts`) e
   `tests/i18n.test.ts` troca para o inglês e volta.
+- **0.18.2**: licença **GPL-3.0-or-later** (a mesma do Ideario e do Nodo; até a 0.18.1 era MIT). Código igual.
 - Em uso: o Ideario (card inteiro, `NoteEditor`) e o Nodo (o nó é o card: `CardBody` + `CardPills` no mapa,
   `CardDialog` + `NoteEditor` ao abrir, com `features({ category: false, links: false })`: fotos, arquivos, câmera e
   gravador entram no `.nodo`, um zip com os anexos).

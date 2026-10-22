@@ -11,7 +11,7 @@ aplicativos, e define os formatos de dados que eles trocam entre si.
 | Pacote | `@wylho/atrio` |
 | Distribuição | código-fonte Svelte 5 + TypeScript, por dependência git com tag |
 | Dependências do consumidor | `svelte` ^5.57, `@lucide/svelte` ≥ 1.0 |
-| Licença | MIT |
+| Licença | GPL-3.0-or-later |
 
 ## Instalação
 
@@ -157,4 +157,4 @@ pnpm run test    # vitest (jsdom)
 
 ## Licença
 
-MIT. Ver [LICENSE](LICENSE).
+GPL-3.0-or-later (a mesma do Ideario e do Nodo). Ver [LICENSE](LICENSE). As versões até a 0.18.1 saíram como MIT.

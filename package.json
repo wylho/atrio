@@ -1,8 +1,8 @@
 {
   "name": "@wylho/atrio",
-  "version": "0.18.1",
+  "version": "0.18.2",
   "description": "Atrio: design system e componentes compartilhados pelo Ideario e pelo Nodo.",
-  "license": "MIT",
+  "license": "GPL-3.0-or-later",
   "type": "module",
   "svelte": "./src/index.ts",
   "exports": {

@@ -1,9 +1,9 @@
 [package]
 name = "atrio"
-version = "0.18.1"
+version = "0.18.2"
 edition = "2021"
 rust-version = "1.80"
-license = "MIT"
+license = "GPL-3.0-or-later"
 description = "Atrio: o núcleo compartilhado do Ideario e do Nodo (nota em Markdown ↔ documento do editor)."
 repository = "https://github.com/wylho/atrio"
 
