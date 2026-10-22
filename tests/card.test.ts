@@ -170,7 +170,7 @@ describe('o card (miniatura), o mesmo em todos os apps', () => {
     expect(a.el.querySelector('.card-pin')).toBeNull()
     a.el.click()
     a.done()
-    const b = show({ card: base, onopen: () => calls.push('abrir'), onselect: () => calls.push('marcar'), onpin: () => calls.push('fixar'), selecting: true })
+    const b = show({ card: base, onopen: () => calls.push('abrir'), onmark: () => calls.push('marcar'), onpin: () => calls.push('fixar'), selecting: true })
     b.el.click()
     ;(b.el.querySelector('.card-check') as HTMLElement).click()
     expect(b.el.querySelector('.card-pin'), 'com seleção em andamento, sem alfinete').toBeNull()

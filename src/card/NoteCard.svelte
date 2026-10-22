@@ -23,7 +23,7 @@
     label,
     class: extra = '',
     onopen,
-    onselect,
+    onmark,
     onpin,
     onstatus,
     ontag,
@@ -45,7 +45,7 @@
     /** Abrir o card (o gesto é do app: um clique no Ideario, duplo clique no Nodo). */
     onopen?: (e: MouseEvent | KeyboardEvent) => void
     /** Marcar ou desmarcar (seleção múltipla); sem ela, o card não tem a marca. */
-    onselect?: (e: MouseEvent | KeyboardEvent) => void
+    onmark?: (e: MouseEvent | KeyboardEvent) => void
     /** Fixar ou desafixar; sem ela, o card não tem o alfinete. */
     onpin?: () => void
     onstatus?: (to: ReminderStatus) => void
@@ -68,7 +68,7 @@
 
   // Com seleção ativa, tocar no card marca ou desmarca; Ctrl/⌘+clique e Shift+clique também, como numa pasta.
   function activate(e: MouseEvent | KeyboardEvent) {
-    if (onselect && (selecting || e.shiftKey || e.ctrlKey || e.metaKey)) onselect(e)
+    if (onmark && (selecting || e.shiftKey || e.ctrlKey || e.metaKey)) onmark(e)
     else onopen?.(e)
   }
 </script>
@@ -99,7 +99,7 @@
   role="button"
   aria-label={label ?? card.title}
 >
-  {#if onselect}
+  {#if onmark}
     <!-- Só com mouse por cima (ou já selecionada): marcar para seleção múltipla. -->
     <button
       class="card-check"
@@ -107,7 +107,7 @@
       aria-pressed={selected}
       onclick={(e) => {
         e.stopPropagation()
-        onselect(e)
+        onmark(e)
       }}><Check size={11} strokeWidth={3.2} /></button
     >
   {/if}

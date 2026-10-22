@@ -34,7 +34,11 @@ for dir in "$IDEARIO_DIR" "$NODO_DIR"; do
   # Instala onde houver package.json com o Atrio (npm ou pnpm, pelo lockfile).
   grep -rl --include=package.json 'wylho/atrio' "$dir" --exclude-dir=node_modules | while read -r pkg; do
     d="$(dirname "$pkg")"
-    if [ -f "$d/pnpm-lock.yaml" ]; then (cd "$d" && pnpm install --silent); else (cd "$d" && npm install --silent); fi
+    # O npm segue o package-lock e não troca uma dependência git só porque a tag mudou no package.json: instala a
+    # tag pelo nome (e confere a versão instalada no fim).
+    if [ -f "$d/pnpm-lock.yaml" ]; then (cd "$d" && pnpm install --silent); else (cd "$d" && npm install --silent "@wylho/atrio@github:wylho/atrio#$v"); fi
+    got="$(node -p "require('$d/node_modules/@wylho/atrio/package.json').version")"
+    [ "v$got" = "$v" ] || { echo "em $d o Atrio instalado é $got, não $v"; exit 1; }
   done
   # Lockfile do Cargo, se o app usa a crate.
   for ws in $(grep -rl --include=Cargo.toml 'wylho/atrio' "$dir" --exclude-dir=target | xargs -r -n1 dirname | sort -u); do
