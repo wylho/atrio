@@ -308,7 +308,8 @@ button { cursor: pointer; }
 
 /* gaveta */
 .overlay { position: fixed; inset: 0; background: rgb(10 14 13 / .38); z-index: 20; animation: fade .15s ease; }
-.overlay.dark { background: rgb(6 8 8 / .92); }
+/* O escuro do visualizador cobre também o card aberto (z 30): a foto abre de dentro de uma nota. */
+.overlay.dark { background: rgb(6 8 8 / .92); z-index: 31; }
 .drawer {
   position: fixed; top: 0; bottom: 0; left: 0; z-index: 21; width: min(84vw, 330px);
   background: var(--bg); display: flex; flex-direction: column; border-radius: 0 24px 24px 0;
@@ -414,7 +415,7 @@ button { cursor: pointer; }
 .mood-tile:hover .mood-cap, .mood-tile:focus-visible .mood-cap { opacity: 1; }
 
 .lightbox {
-  position: fixed; inset: 0; z-index: 31; width: 100%; max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column;
+  position: fixed; inset: 0; z-index: 32; width: 100%; max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column;
   padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); color: #fff;
 }
 .lb-top { display: flex; align-items: center; gap: 8px; padding: 10px 8px; }
