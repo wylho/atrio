@@ -92,6 +92,11 @@ para o que os dois núcleos compartilham (dependência git do Cargo, na mesma ta
   no snippet `actions`). Pacote à parte porque traz o `pdfjs-dist` (dependência opcional, carregada só ao abrir PDF).
 - **0.17.1**: o escuro do visualizador (`.overlay.dark`, z 31; `.lightbox` z 32) cobre o card aberto (z 30): antes,
   abrir uma foto de dentro de uma nota deixava o card claro atrás dela, nos dois apps.
+- **0.18.0**: **idiomas** (`src/i18n.svelte.ts`, pedido do usuário: inglês e português): o texto em português do
+  código é a chave (`t('Apagar nota')`), o dicionário em inglês traduz (`addMessages('en', {...})`), texto sem
+  tradução aparece em português; `{nome}` com `vars`; `tn(n, um, vários)` para plural; `setLocale('auto'|'en'|'pt-BR')`
+  guarda no aparelho (`atrio.locale`) e põe o `lang` no `<html>`; `systemLocale` (português para qualquer `pt-*`,
+  inglês para o resto); `LOCALES` para o seletor das Configurações; `intlLocale()` para datas e números.
 - Em uso: o Ideario (card inteiro, `NoteEditor`) e o Nodo (o nó é o card: `CardBody` + `CardPills` no mapa,
   `CardDialog` + `NoteEditor` ao abrir, com `features({ category: false, links: false })`: fotos, arquivos, câmera e
   gravador entram no `.nodo`, um zip com os anexos).

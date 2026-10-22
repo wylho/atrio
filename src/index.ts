@@ -60,3 +60,5 @@ export {
   type Mode,
   type PaletteId,
 } from './theme/palettes'
+// Idiomas (inglês e português): `t`, `tn`, `addMessages`, `setLocale`.
+export { addMessages, i18n, intlLocale, LOCALES, setLocale, systemLocale, t, tn, type Locale, type LocalePref } from './i18n.svelte'
