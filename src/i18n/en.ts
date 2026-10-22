@@ -219,4 +219,8 @@ export const EN: Record<string, string> = {
   '{atual} de {total}': '{atual} of {total}',
   '+{n} linha': '+{n} row',
   '+{n} linhas': '+{n} rows',
+  '{n} coluna': '{n} column',
+  '{n} colunas': '{n} columns',
+  '{n} linha': '{n} row',
+  '{n} linhas': '{n} rows',
 }

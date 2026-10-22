@@ -115,6 +115,11 @@ para o que os dois núcleos compartilham (dependência git do Cargo, na mesma ta
   bloco `Table` (`rows`, `header`, `more`, `text`) em `projection.rs` e `kind: 'table'` em `markdown.ts`/`types.ts`, as
   primeiras 8 linhas (`MAX_TABLE_ROWS`) e "+N linhas"; o `text` ("a · b" por linha) segue na busca, nas `#tags` e no
   limite da prévia. `CardBody` desenha `<table class="pv-table">` (CSS em `atrio.css`, a moldura da tabela do editor).
+- **0.21.0**: **tabela no card fechado é só o resumo** (escolha do usuário, opção D, depois de ver cinco jeitos numa
+  página de prévias): num card estreito as colunas viravam fiapos e a palavra quebrava letra a letra. O `CardBody`
+  desenha `.pv-tsum`: "Tabela · 5 colunas × 12 linhas" (as linhas contam as que passaram das 8 da prévia) e os nomes
+  das colunas em até 2 linhas; a tabela inteira só no card aberto. Os dados do bloco `table` não mudaram (busca,
+  `#tags` e o `text` seguem iguais), então nenhum app refaz a prévia guardada.
 - Em uso: o Ideario (card inteiro, `NoteEditor`) e o Nodo (o nó é o card: `CardBody` + `CardPills` no mapa,
   `CardDialog` + `NoteEditor` ao abrir, com `features({ category: false, links: false })`: fotos, arquivos, câmera e
   gravador entram no `.nodo`, um zip com os anexos).

@@ -2,8 +2,8 @@
   // Corpo do card de nota: emoji, título, a prévia estruturada e a linha de pílulas. É o miolo do card do Ideario,
   // agora num lugar só: o Ideario põe em volta a capa, o alfinete e a seleção; o Nodo põe o card no lugar do nó.
   import type { Snippet } from 'svelte'
-  import { Check, Link2 } from '@lucide/svelte'
-  import { tn } from '../i18n.svelte'
+  import { Check, Link2, Table } from '@lucide/svelte'
+  import { t, tn } from '../i18n.svelte'
   import { watchClip } from './clip'
   import { withHashtags } from './hashtags'
   import { FILE_ICONS } from './icons'
@@ -58,18 +58,14 @@
         {:else if b.kind === 'code'}
           <pre class="pv-code">{b.text}</pre>
         {:else if b.kind === 'table'}
-          <table class="pv-table">
-            <tbody>
-              {#each b.rows as row, r (r)}
-                <tr>
-                  {#each row as cell, c (c)}
-                    {#if b.header && r === 0}<th>{@render rich(cell)}</th>{:else}<td>{@render rich(cell)}</td>{/if}
-                  {/each}
-                </tr>
-              {/each}
-            </tbody>
-          </table>
-          {#if b.more}<p class="pv-more pv-table-more">{tn(b.more, '+{n} linha', '+{n} linhas')}</p>{/if}
+          <!-- Card fechado: só o resumo da tabela (escolha do usuário, opção D). Num card estreito as colunas viravam
+               fiapos e a palavra quebrava letra a letra; o conteúdo aparece ao abrir o card. -->
+          {@const cols = Math.max(0, ...b.rows.map((row) => row.length))}
+          {@const lines = b.rows.length - (b.header ? 1 : 0) + b.more}
+          <div class="pv-tsum">
+            <p class="pv-tsum-size"><Table size={14} aria-hidden="true" />{t('Tabela')} · {tn(cols, '{n} coluna', '{n} colunas')} × {tn(lines, '{n} linha', '{n} linhas')}</p>
+            {#if b.header && b.rows[0]?.length}<p class="pv-tsum-cols">{b.rows[0].join(' · ')}</p>{/if}
+          </div>
         {:else if b.kind === 'bullet' || b.kind === 'ordered'}
           <p class="pv-li" style:--depth={b.depth} data-mark={b.kind === 'ordered' ? `${b.n}.` : '•'}>{@render rich(b.text)}</p>
         {:else}

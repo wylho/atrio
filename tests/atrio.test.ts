@@ -83,12 +83,32 @@ describe('CardBody', () => {
     expect(after).toEqual({ kind: 'text', text: 'Fim.' })
   })
 
-  it('o card desenha a tabela', () => {
+  it('o card fechado mostra só o resumo da tabela (colunas, linhas e os nomes das colunas)', () => {
     const target = document.createElement('div')
     const app = mount(CardBody, { target, props: { title: 'Produtos', blocks: previewFromMarkdown('| A | B |\n|---|---|\n| 1 | 2 |') } })
     flushSync()
-    expect([...target.querySelectorAll('.pv-table th')].map((e) => e.textContent)).toEqual(['A', 'B'])
-    expect([...target.querySelectorAll('.pv-table td')].map((e) => e.textContent)).toEqual(['1', '2'])
+    expect(target.querySelector('.pv-table')).toBeNull()
+    expect(target.querySelector('.pv-tsum-size')?.textContent).toBe('Tabela · 2 colunas × 1 linha')
+    expect(target.querySelector('.pv-tsum-cols')?.textContent).toBe('A · B')
+    unmount(app)
+  })
+
+  it('o resumo conta as linhas que ficaram de fora da prévia', () => {
+    const rows = Array.from({ length: 11 }, (_, i) => `| Item ${i + 1} | R$ ${i} | ok |`).join('\n')
+    const target = document.createElement('div')
+    const app = mount(CardBody, { target, props: { title: 'Lista', blocks: previewFromMarkdown(`| Produto | Preço | Status |\n|---|---|---|\n${rows}`) } })
+    flushSync()
+    expect(target.querySelector('.pv-tsum-size')?.textContent).toBe('Tabela · 3 colunas × 11 linhas')
+    unmount(app)
+  })
+
+  it('tabela sem cabeçalho: só o tamanho, sem nomes de coluna', () => {
+    const target = document.createElement('div')
+    const blocks = [{ kind: 'table' as const, rows: [['a', 'b'], ['c', 'd']], header: false, more: 0, text: 'a · b\nc · d' }]
+    const app = mount(CardBody, { target, props: { title: 'Solta', blocks } })
+    flushSync()
+    expect(target.querySelector('.pv-tsum-size')?.textContent).toBe('Tabela · 2 colunas × 2 linhas')
+    expect(target.querySelector('.pv-tsum-cols')).toBeNull()
     unmount(app)
   })
 
