@@ -5,6 +5,13 @@ outro"). Svelte 5 + TypeScript, distribuída como código-fonte por dependência
 para o que os dois núcleos compartilham (dependência git do Cargo, na mesma tag).
 
 ## Regras
+- **O Atrio é o hub (regra do usuário, vale para toda tarefa):** tudo o que o Ideario e o Nodo têm em comum mora
+  **só** no Atrio (`wylho/atrio`: componentes, CSS, regras do card, formatos, e no Rust a crate `atrio`), e os apps
+  só usam. O card é **um só**: não parecido, **exatamente o mesmo** nos dois programas (mesma prévia, mesmas regras,
+  mesmo visual). Antes de criar ou corrigir algo num app, perguntar: isto existe ou deveria existir no outro? Se sim,
+  a mudança se faz no Atrio, sobe a tag e os **dois** apps sobem juntos (nunca deixar um app numa tag velha). Mesmo
+  quando o usuário fala de um app só, se o assunto é peça do Atrio, o caminho é o Atrio. Plano em
+  `atrio/docs/UNIFICACAO.md`.
 - **Fonte da verdade do visual.** O `src/atrio.css` veio de `ideario/src/app.css`. Mudança de token, cor ou
   componente compartilhado se faz **aqui**, e os dois apps sobem a tag. Não editar cópias nos apps.
 - **Compatibilidade entre os apps é requisito**, não detalhe: o mesmo card, as mesmas regras de prévia
