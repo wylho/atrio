@@ -107,6 +107,10 @@ para o que os dois núcleos compartilham (dependência git do Cargo, na mesma ta
   seletor de emoji carrega o `emojibase-data/en` em inglês. Testes rodam em português (`tests/setup.ts`) e
   `tests/i18n.test.ts` troca para o inglês e volta.
 - **0.18.2**: licença **GPL-3.0-or-later** (a mesma do Ideario e do Nodo; até a 0.18.1 era MIT). Código igual.
+- **0.19.0**: **vários cards na área de transferência** (pedido do usuário: selecionar vários tópicos no Nodo e
+  copiar): `cardsToClipboard`, `cardsFromHtml`, `readCards`, `writeCards`, `readClipboardCards`; um `<div
+  data-atrio-card>` por card, o Markdown de todos em sequência. As funções de um card lêem o primeiro, então uma versão
+  antiga de um app cola o primeiro card.
 - Em uso: o Ideario (card inteiro, `NoteEditor`) e o Nodo (o nó é o card: `CardBody` + `CardPills` no mapa,
   `CardDialog` + `NoteEditor` ao abrir, com `features({ category: false, links: false })`: fotos, arquivos, câmera e
   gravador entram no `.nodo`, um zip com os anexos).

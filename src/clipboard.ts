@@ -47,11 +47,26 @@ export function cardToClipboard(card: ClipCard): { html: string; text: string } 
   }
 }
 
+/** Vários cards de uma vez (uma seleção): um `<div data-atrio-card>` por card, e o Markdown de todos em sequência. Um
+ * app que só lê um card pega o primeiro. */
+export function cardsToClipboard(cards: ClipCard[]): { html: string; text: string } {
+  const parts = cards.map(cardToClipboard)
+  return { html: parts.map((p) => p.html).join(''), text: parts.map((p) => p.text).filter(Boolean).join('\n\n') }
+}
+
 /** Lê um card de um HTML colado, ou `null` se não houver card do Atrio nele. */
 export function cardFromHtml(html: string): ClipCard | null {
-  if (!html.includes(ATTR)) return null
-  const el = new DOMParser().parseFromString(html, 'text/html').querySelector(`[${ATTR}]`)
-  const raw = el?.getAttribute(ATTR)
+  return cardsFromHtml(html)[0] ?? null
+}
+
+/** Todos os cards do Atrio num HTML colado, na ordem (nenhum: lista vazia). */
+export function cardsFromHtml(html: string): ClipCard[] {
+  if (!html.includes(ATTR)) return []
+  const els = new DOMParser().parseFromString(html, 'text/html').querySelectorAll(`[${ATTR}]`)
+  return [...els].map((el) => parseCard(el.getAttribute(ATTR))).filter((c): c is ClipCard => c !== null)
+}
+
+function parseCard(raw: string | null): ClipCard | null {
   if (!raw) return null
   try {
     const o = JSON.parse(fromBase64(raw)) as Partial<ClipCard> & { atrio?: number }
@@ -70,12 +85,22 @@ export function cardFromHtml(html: string): ClipCard | null {
 
 /** O card de um evento de colar (`ClipboardEvent.clipboardData`), se houver. */
 export function readCard(data: DataTransfer | null | undefined): ClipCard | null {
-  return data ? cardFromHtml(data.getData('text/html')) : null
+  return readCards(data)[0] ?? null
+}
+
+/** Todos os cards de um evento de colar. */
+export function readCards(data: DataTransfer | null | undefined): ClipCard[] {
+  return data ? cardsFromHtml(data.getData('text/html')) : []
 }
 
 /** Copia o card. Sem `ClipboardItem` (navegador antigo), copia só o Markdown. */
 export async function writeCard(card: ClipCard): Promise<void> {
-  const { html, text } = cardToClipboard(card)
+  return writeCards([card])
+}
+
+/** Copia vários cards de uma vez. */
+export async function writeCards(cards: ClipCard[]): Promise<void> {
+  const { html, text } = cardsToClipboard(cards)
   if (typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write) {
     await navigator.clipboard.write([
       new ClipboardItem({
@@ -90,12 +115,17 @@ export async function writeCard(card: ClipCard): Promise<void> {
 
 /** O card guardado na área de transferência agora (para o "Colar" de um menu, que não tem evento de colar). */
 export async function readClipboardCard(): Promise<ClipCard | null> {
+  return (await readClipboardCards())[0] ?? null
+}
+
+/** Todos os cards guardados na área de transferência agora. */
+export async function readClipboardCards(): Promise<ClipCard[]> {
   try {
     for (const item of await navigator.clipboard.read()) {
-      if (item.types.includes('text/html')) return cardFromHtml(await (await item.getType('text/html')).text())
+      if (item.types.includes('text/html')) return cardsFromHtml(await (await item.getType('text/html')).text())
     }
   } catch {
     // Sem permissão para ler (navegador): o colar pelo teclado continua funcionando, pelo evento.
   }
-  return null
+  return []
 }

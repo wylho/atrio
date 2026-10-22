@@ -14,10 +14,15 @@ export { emptyMeta, hasStatus, setReminder, setStatus, STATUS, statusOf, type Ca
 export {
   CARD_FORMAT,
   cardFromHtml,
+  cardsFromHtml,
+  cardsToClipboard,
   cardToClipboard,
   readCard,
+  readCards,
   readClipboardCard,
+  readClipboardCards,
   writeCard,
+  writeCards,
   type ClipCard,
 } from './clipboard'
 
