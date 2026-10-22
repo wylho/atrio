@@ -1,5 +1,8 @@
 //! Regras de texto do card, as mesmas nos dois núcleos (vieram do Ideario).
 
+use unicode_normalization::char::is_combining_mark;
+use unicode_normalization::UnicodeNormalization;
+
 /// Repetições de lembrete aceitas (todo dia, semana, mês, ano).
 pub const REPEATS: [&str; 4] = ["day", "week", "month", "year"];
 
@@ -41,6 +44,74 @@ pub fn clean_emoji(s: &str) -> Option<String> {
     ok.then(|| s.to_string())
 }
 
+/// Minúsculas e sem acento ("Ação" → "acao"), para ordenar e comparar como as pessoas esperam.
+pub fn fold(s: &str) -> String {
+    s.nfd()
+        .filter(|c| !is_combining_mark(*c))
+        .flat_map(char::to_lowercase)
+        .collect()
+}
+
+fn is_tag_char(c: char) -> bool {
+    c.is_alphanumeric() || c == '_' || c == '-'
+}
+
+/// Tags digitadas como `#palavra` no texto, em minúsculas, na ordem em que aparecem (sem repetir).
+pub fn hash_tags(text: &str) -> Vec<String> {
+    let chars: Vec<char> = text.chars().collect();
+    let mut out: Vec<String> = Vec::new();
+    let mut i = 0;
+    while i < chars.len() {
+        let starts =
+            chars[i] == '#' && (i == 0 || !(chars[i - 1].is_alphanumeric() || chars[i - 1] == '_'));
+        if starts {
+            let mut j = i + 1;
+            while j < chars.len() && is_tag_char(chars[j]) {
+                j += 1;
+            }
+            if j > i + 1 {
+                let tag: String = chars[i + 1..j]
+                    .iter()
+                    .flat_map(|c| c.to_lowercase())
+                    .collect();
+                if !out.contains(&tag) {
+                    out.push(tag);
+                }
+            }
+            i = j;
+        } else {
+            i += 1;
+        }
+    }
+    out
+}
+
+/// Espaços e tabulações repetidos viram um só; espaços em volta de quebras de linha somem.
+pub fn clean(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let mut pending_space = false;
+    for c in s.chars() {
+        match c {
+            ' ' | '\t' => pending_space = true,
+            '\n' => {
+                while out.ends_with(' ') {
+                    out.pop();
+                }
+                out.push('\n');
+                pending_space = false;
+            }
+            _ => {
+                if pending_space && !out.is_empty() && !out.ends_with('\n') {
+                    out.push(' ');
+                }
+                pending_space = false;
+                out.push(c);
+            }
+        }
+    }
+    out.trim().to_string()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -61,5 +132,83 @@ mod tests {
         assert_eq!(clean_emoji("a🚀"), None);
         assert_eq!(clean_emoji("🚀 🌱"), None);
         assert_eq!(clean_emoji(""), None);
+    }
+}
+
+#[cfg(test)]
+mod ideario_tests {
+    use super::*;
+
+    #[test]
+    fn fold_removes_accents() {
+        assert_eq!(fold("Ação Pão ÍNDIO"), "acao pao indio");
+    }
+
+    #[test]
+    fn hash_tags_like_the_ui() {
+        assert_eq!(
+            hash_tags("Ver #Casa e #compras-do-mês, não e-mail#x"),
+            vec!["casa", "compras-do-mês"]
+        );
+        assert_eq!(hash_tags("#a #a #b"), vec!["a", "b"]);
+        assert!(hash_tags("# solto").is_empty());
+    }
+
+    #[test]
+    fn clean_spaces() {
+        assert_eq!(clean("  a   b \n  c\t\td  "), "a b\nc d");
+    }
+
+    #[test]
+    fn normalize() {
+        assert_eq!(normalize_tag(" ##Lista de Compras "), "lista-de-compras");
+    }
+}
+
+#[cfg(test)]
+mod props {
+    //! Comparar sem acento e as `#tags` valem para qualquer texto, não só os exemplos.
+    use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        #[test]
+        fn folding_twice_is_folding_once(s in ".{0,60}") {
+            prop_assert_eq!(fold(&fold(&s)), fold(&s));
+        }
+
+        #[test]
+        fn accents_and_case_do_not_matter(s in "[a-zA-Z ]{0,30}") {
+            let accented: String = s.chars().map(|c| match c { 'a' => 'á', 'e' => 'ê', 'o' => 'õ', 'c' => 'ç', other => other }).collect();
+            prop_assert_eq!(fold(&accented.to_uppercase()), fold(&s));
+        }
+
+        #[test]
+        fn tags_found_are_clean_and_found_again(s in ".{0,80}") {
+            let tags = hash_tags(&s);
+            for t in &tags {
+                prop_assert!(!t.is_empty());
+                prop_assert!(t.chars().all(is_tag_char));
+                prop_assert_eq!(&t.to_lowercase(), t);
+                // escrita de novo como #tag, é achada de novo
+                prop_assert_eq!(hash_tags(&format!("#{t}")), vec![t.clone()]);
+            }
+            let mut unique = tags.clone();
+            unique.dedup();
+            prop_assert_eq!(unique.len(), tags.len());
+        }
+
+        #[test]
+        fn normalizing_a_tag_twice_changes_nothing(s in ".{0,40}") {
+            let once = normalize_tag(&s);
+            prop_assert_eq!(normalize_tag(&once), once);
+        }
+
+        #[test]
+        fn clean_leaves_no_double_spaces(s in "[ \ta-z\n]{0,60}") {
+            let c = clean(&s);
+            prop_assert!(!c.contains("  ") && !c.contains(" \n") && !c.contains('\t'), "{:?}", c);
+            prop_assert_eq!(clean(&c), c);
+        }
     }
 }

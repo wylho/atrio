@@ -67,7 +67,7 @@ texto.
 | Miniatura | moldura do `NoteCard` do Ideario × `div.map-card` + `MapCard` do Nodo | **`NoteCard.svelte`**: moldura, capa com proporção real e `+N`, card só-arquivo, marcar, fixar, seleção |
 | Capa e arquivo | miniatura, `FilePreview` e `previews` só no Ideario | `CardCover` e `FilePreview` no Atrio; `CardHost.thumbUrl(hash)` |
 | Pílulas | `fileCount`, categoria e #etiquetas só no Ideario | `cardPills(resumo)`: etiquetas = manuais ∪ #etiquetas do texto |
-| Cor | `c-{cor}` × tinta do ramo misturada em linha | a cor do card é a `NoteColor` (`.c-*`); a cor do ramo, no máximo, como borda ou destaque (**decisão do usuário**) |
+| Cor | `c-{cor}` × tinta do ramo misturada em linha | a cor do card e a do tópico são a mesma `NoteColor` da paleta do tema do Atrio (`.c-*`) |
 | Card aberto | Ideario copia o `Dialog`; Nodo usa `CardDialog` | os dois usam o `CardDialog` |
 | Barra do card aberto | duas barras e dois menus ⋮ | **`CardTopBar`** + `cardMenu()`: status, emoji, documento, lembrete embutidos; cada app acrescenta as suas ações |
 | Salvar e fechar | 400 ms + retentativa + `settle` × dois relógios, sem `settle` | **`CardSession`** (`flush`/`settle`/`close`) e a trava de atalhos com o card aberto |
@@ -197,10 +197,10 @@ Cada fase termina com os dois apps na mesma tag e verificados.
 
 ## Decisões do usuário
 
-1. **Cor do card no Nodo:** a cor do card (a mesma paleta do Ideario), e o ramo só na linha? Ou o card tingido pelo
-   ramo, como hoje?
+1. ~~Cor do card no Nodo~~ **Decidido (22/10):** os temas são do Atrio, e a paleta também. A cor do card e a cor
+   do tópico no mapa saem da mesma paleta (`NOTE_COLORS`/tokens do tema do Atrio), em tudo.
 2. **Abrir o card:** no Ideario é um clique; no Nodo o clique seleciona o tópico e o duplo clique (ou ⌘Enter) abre.
    Fica assim, pelo mapa, ou igual?
 3. **Notas soltas do Nodo** viram o mesmo card?
-4. **Hash dos anexos:** o SHA-256 inteiro do Ideario (recomendado; só existem mapas de teste com anexos).
-5. **Ideario em pnpm** (recomendado).
+4. ~~Hash dos anexos~~ **Decidido:** o SHA-256 inteiro do Ideario.
+5. ~~Ideario em pnpm~~ **Decidido:** sim.

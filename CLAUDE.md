@@ -67,6 +67,9 @@ para o que os dois núcleos compartilham (dependência git do Cargo, na mesma ta
   do tipo (pela extensão do nome).
 - **0.11.0**: foto, arquivo ou gravação com o cursor numa lista (ou citação, tabela) entra logo **depois** do bloco,
   como bloco do texto, não dentro do item (antes a foto ia para dentro da tarefa e a prévia do Nodo a perdia).
+- **0.12.0** (unificação, fase 1): `atrio::text` ganha `fold` (comparar sem acento), `hash_tags` (`#tag` no texto) e
+  `clean` (espaços), vindos do Ideario; `atrio::canon` expõe `Unit`/`units`/`canon_el`/`canon_texts` (o Ideario
+  compara com o Y.Doc por eles); feature `testdoc` dá o gerador de documentos aos testes dos apps.
 - Em uso: o Ideario (card inteiro, `NoteEditor`) e o Nodo (o nó é o card: `CardBody` + `CardPills` no mapa,
   `CardDialog` + `NoteEditor` ao abrir, com `features({ category: false, links: false })`: fotos, arquivos, câmera e
   gravador entram no `.nodo`, um zip com os anexos).

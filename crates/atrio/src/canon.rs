@@ -4,12 +4,14 @@
 
 use serde_json::{json, Map, Value};
 
-enum Unit<'a> {
+/// Filho de um nó como o Y guarda: um elemento, ou um texto (os nós de texto seguidos do JSON viram um só).
+pub enum Unit<'a> {
     Text(&'a [Value]),
     El(&'a Value),
 }
 
-fn units(nodes: &[Value]) -> Vec<Unit<'_>> {
+/// Os filhos de um nó agrupados como o Y guarda.
+pub fn units(nodes: &[Value]) -> Vec<Unit<'_>> {
     let mut out = Vec::new();
     let mut i = 0;
     while i < nodes.len() {
@@ -29,14 +31,15 @@ fn units(nodes: &[Value]) -> Vec<Unit<'_>> {
 
 /// Forma canônica para comparar um filho do JSON com um do Y: sem atributos nulos, marcas em ordem, textos com as
 /// mesmas marcas juntos e sem textos vazios (como a leitura do Y devolve).
-fn canon_unit(u: &Unit) -> Value {
+pub fn canon_unit(u: &Unit) -> Value {
     match u {
         Unit::Text(nodes) => Value::Array(canon_texts(nodes)),
         Unit::El(node) => canon_el(node),
     }
 }
 
-fn canon_texts(nodes: &[Value]) -> Vec<Value> {
+/// Trechos de texto na forma canônica.
+pub fn canon_texts(nodes: &[Value]) -> Vec<Value> {
     let mut out: Vec<Value> = Vec::new();
     for n in nodes {
         let text = n.get("text").and_then(Value::as_str).unwrap_or("");
@@ -86,7 +89,8 @@ pub fn canon(body: &Value) -> Value {
     canon_el(body)
 }
 
-fn canon_el(node: &Value) -> Value {
+/// Um elemento na forma canônica.
+pub fn canon_el(node: &Value) -> Value {
     let mut out = Map::new();
     out.insert(
         "type".into(),
