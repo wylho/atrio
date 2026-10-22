@@ -84,6 +84,9 @@ para o que os dois núcleos compartilham (dependência git do Cargo, na mesma ta
 - **0.15.0**: `nearestNoteColor(hex)`: a cor de nota mais próxima de uma cor qualquer, pelo tom (o tópico do Nodo
   pintado de qualquer cor ganha o card padrão na cor do Atrio mais parecida).
 - **0.15.1**: no `NoteCard`, marcar é `onmark` (`onselect` é um evento do HTML e confundia os tipos).
+- **0.16.0**: **`CardTopBar`**, a barra do topo do card aberto, a mesma nos dois apps (voltar, rótulo, modo documento
+  na janela larga, fixar quando o app tem, lembrete e o menu ⋮ com Status e Emoji de capa). Itens do app pelos
+  snippets `menuStart` (antes de Status) e `menuEnd` (depois do emoji); `menu` troca o menu inteiro.
 - Em uso: o Ideario (card inteiro, `NoteEditor`) e o Nodo (o nó é o card: `CardBody` + `CardPills` no mapa,
   `CardDialog` + `NoteEditor` ao abrir, com `features({ category: false, links: false })`: fotos, arquivos, câmera e
   gravador entram no `.nodo`, um zip com os anexos).

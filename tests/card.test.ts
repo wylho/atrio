@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { flushSync, mount, unmount } from 'svelte'
-import { emptyMeta, features, hashTags, nearestNoteColor, hasStatus, NoteCard, setReminder, setStatus, statusOf, type CardSummary } from '../src/index'
+import { CardTopBar, emptyMeta, features, hashTags, nearestNoteColor, hasStatus, NoteCard, setReminder, setStatus, statusOf, type CardSummary } from '../src/index'
 import { NoteEditor } from '../src/editor'
 import Harness from './NoteEditorHarness.svelte'
 
@@ -188,6 +188,31 @@ describe('cor de nota mais próxima', () => {
     expect(['#e8c547', '#f0a36b', '#e5818d', '#5aa0f2', '#a78bfa', '#5bb974', '#888888', 'nada'].map(nearestNoteColor)).toEqual([
       'butter', 'sand', 'rose', 'sky', 'lilac', 'sage', 'none', 'none',
     ])
+  })
+})
+
+describe('barra do card aberto, a mesma nos dois apps', () => {
+  function bar(props: Record<string, unknown>) {
+    const target = document.createElement('div')
+    document.body.appendChild(target)
+    const app = mount(CardTopBar, { target, props: { meta: emptyMeta(), card: undefined, ...props } as never })
+    flushSync()
+    return { el: target, done: () => unmount(app) }
+  }
+
+  it('voltar sempre; modo documento só na janela larga; fixar só no app que fixa', () => {
+    let back = 0
+    const a = bar({ onback: () => back++, ondoc: () => {} })
+    ;(a.el.querySelector('[aria-label="Voltar"]') as HTMLElement).click()
+    expect(back).toBe(1)
+    expect(a.el.querySelector('[aria-label="Abrir como documento"]'), 'janela estreita').toBeNull()
+    expect(a.el.querySelector('[aria-label="Fixar"]')).toBeNull()
+    expect(a.el.querySelector('[aria-label="Mais opções"]')).not.toBeNull()
+    a.done()
+    const b = bar({ onback: () => {}, wide: true, ondoc: () => {}, onpin: () => {}, pinned: true })
+    expect(b.el.querySelector('[aria-label="Abrir como documento"]')).not.toBeNull()
+    expect(b.el.querySelector('[aria-label="Desafixar"]')).not.toBeNull()
+    b.done()
   })
 })
 
