@@ -32,7 +32,8 @@ jobs:
         run: |
           cargo fmt --all --check
           cargo clippy --all-targets -- -D warnings
-          cargo test
+          cargo clippy --all-targets --all-features -- -D warnings
+          cargo test --all-features
       - name: Marcar a versão
         if: github.event_name == 'push'
         run: |

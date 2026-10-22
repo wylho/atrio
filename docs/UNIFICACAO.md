@@ -195,6 +195,19 @@ Cada fase termina com os dois apps na mesma tag e verificados.
 6. **Build e site:** workflows reutilizáveis, `setup-tauri`, versão, `style.css`, o Ideario em pnpm.
 7. **Limpeza:** `ideario.css` separado, regras e skills comuns, licença do Ideario.
 
+## Idiomas e SEO (pedido do usuário, 22/10)
+
+- **Inglês é a língua principal** do GitHub (README) e do site; o português fica numa subpágina (`/pt/`) e no
+  `README.pt-BR.md`, com o mesmo conteúdo. Vale para o Ideario e o Nodo.
+- **Os dois apps em inglês e português.** Como os componentes do Atrio (card, editor, menus, diálogos) têm texto, a
+  tradução é do Atrio: um `i18n` no Atrio (dicionários `en`/`pt-BR`, o idioma escolhido ou o do sistema), que os
+  componentes do Atrio usam e os apps estendem com os textos deles. O núcleo em Rust (MCP, mensagens de erro) segue o
+  mesmo: textos com chave, `en` e `pt-BR`.
+- **SEO:** palavras-chave estratégicas usadas com naturalidade no texto (não uma lista no fim): título, descrição,
+  `og:`/Twitter cards, `hreflang` entre as duas línguas, dados estruturados (`SoftwareApplication`), `sitemap.xml` e
+  `robots.txt`; no GitHub, descrição e tópicos do repositório.
+- Ordem: entra depois da fase 3 (o card já único), para traduzir uma vez só o que é do Atrio.
+
 ## Decisões do usuário
 
 1. ~~Cor do card no Nodo~~ **Decidido (22/10):** os temas são do Atrio, e a paleta também. A cor do card e a cor

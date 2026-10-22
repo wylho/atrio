@@ -1,6 +1,6 @@
 [package]
 name = "atrio"
-version = "0.12.0"
+version = "0.13.0"
 edition = "2021"
 rust-version = "1.80"
 license = "MIT"
@@ -11,11 +11,22 @@ repository = "https://github.com/wylho/atrio"
 pulldown-cmark = { version = "0.13", default-features = false }
 serde_json = "1"
 unicode-normalization = "0.1"
+serde = { version = "1", features = ["derive"] }
+sha2 = "0.10"
+# Hora local dos lembretes que se repetem (todo mês/ano no mesmo horário, com horário de verão).
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+# Pipeline das fotos (feature `media`): WebP, miniatura, paleta e tom.
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "gif", "webp", "bmp", "tiff"], optional = true }
+fast_image_resize = { version = "5", features = ["image"], optional = true }
+webp = { version = "0.3", optional = true }
+imagesize = { version = "0.13", optional = true }
 proptest = { version = "1", optional = true }
 
 [features]
 # O gerador de documentos dos testes de propriedade, para os apps usarem nos testes deles.
 testdoc = ["dep:proptest"]
+# O pipeline das fotos (WebP, miniatura, paleta e tom) e o preparo de um anexo (`attach::prepare`).
+media = ["dep:image", "dep:fast_image_resize", "dep:webp", "dep:imagesize"]
 
 [dev-dependencies]
 proptest = "1"

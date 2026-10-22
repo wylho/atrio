@@ -70,6 +70,12 @@ para o que os dois núcleos compartilham (dependência git do Cargo, na mesma ta
 - **0.12.0** (unificação, fase 1): `atrio::text` ganha `fold` (comparar sem acento), `hash_tags` (`#tag` no texto) e
   `clean` (espaços), vindos do Ideario; `atrio::canon` expõe `Unit`/`units`/`canon_el`/`canon_texts` (o Ideario
   compara com o Y.Doc por eles); feature `testdoc` dá o gerador de documentos aos testes dos apps.
+- **0.13.0** (unificação, fase 2, dados do card; tudo vindo do Ideario): `atrio::attach` (anexo: `Attachment`,
+  `hash_hex` = SHA-256 inteiro, `kind_of`, `mime_of`, `safe_name`, `unique_path`, `referenced`, `parse_range`,
+  `percent_decode`, e com a feature `media` o `prepare`), `atrio::media` (feature `media`: o pipeline das fotos,
+  WebP, miniatura, paleta e tom), `atrio::card` (`CardStatus`, `Status`, `set_status`/`complete`/`clear_status`,
+  `next_occurrence`: as regras de `meta.ts`) e `atrio::projection` (a prévia do card, **a única**; teste de
+  propriedade: documento e o Markdown dele dão a mesma prévia). O CI testa com todas as features.
 - Em uso: o Ideario (card inteiro, `NoteEditor`) e o Nodo (o nó é o card: `CardBody` + `CardPills` no mapa,
   `CardDialog` + `NoteEditor` ao abrir, com `features({ category: false, links: false })`: fotos, arquivos, câmera e
   gravador entram no `.nodo`, um zip com os anexos).
