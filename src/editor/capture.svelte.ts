@@ -1,5 +1,6 @@
 // Gravador de voz e câmera, para a nota. Só aparecem onde o aparelho tem microfone ou câmera.
 import { say } from '../util/notify'
+import { t } from '../i18n.svelte'
 
 export const canRecord = () => typeof MediaRecorder !== 'undefined' && !!navigator.mediaDevices?.getUserMedia
 
@@ -31,7 +32,7 @@ export class Recorder {
     try {
       this.stream = await navigator.mediaDevices.getUserMedia({ audio: true })
     } catch {
-      say('Sem acesso ao microfone')
+      say(t('Sem acesso ao microfone'))
       return false
     }
     this.chunks = []
@@ -53,7 +54,7 @@ export class Recorder {
       rec.onstop = () => {
         const type = rec.mimeType || 'audio/webm'
         this.cleanup()
-        resolve({ blob: new Blob(this.chunks, { type }), name: `Gravação ${stamp()}.${ext(type)}` })
+        resolve({ blob: new Blob(this.chunks, { type }), name: `${t('Gravação {quando}', { quando: stamp() })}.${ext(type)}` })
       }
       rec.stop()
     })
@@ -76,4 +77,4 @@ export class Recorder {
 }
 
 export const fmtSeconds = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-export const photoName = () => `Foto ${stamp()}.jpg`
+export const photoName = () => `${t('Foto {quando}', { quando: stamp() })}.jpg`

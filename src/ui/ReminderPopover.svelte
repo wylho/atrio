@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Popover } from 'bits-ui'
   import { Bell, Clock, Repeat, X } from '@lucide/svelte'
+  import { i18n, t } from '../i18n.svelte'
   import { fmtReminder, isOverdue, toLocalInput } from '../util/format'
   import { quickTimes } from '../util/reminders'
   import type { Millis, RepeatKind } from '../types'
@@ -19,12 +20,12 @@
     variant?: 'icon' | 'pill'
   } = $props()
 
-  const REPEATS: [RepeatKind | 'none', string][] = [
-    ['none', 'Não repetir'], ['day', 'Todo dia'], ['week', 'Toda semana'], ['month', 'Todo mês'], ['year', 'Todo ano'],
-  ]
+  const REPEATS = $derived<[RepeatKind | 'none', string][]>([
+    ['none', t('Não repetir')], ['day', t('Todo dia')], ['week', t('Toda semana')], ['month', t('Todo mês')], ['year', t('Todo ano')],
+  ])
 
   let open = $state(false)
-  const quick = $derived.by(() => (void open, quickTimes()))
+  const quick = $derived.by(() => (void open, void i18n.locale, quickTimes()))
 
   const pick = (v: Millis | null) => {
     onchange(v)
@@ -35,24 +36,24 @@
 <Popover.Root bind:open>
   {#if variant === 'pill' && value != null}
     <span class="pill rem-pill" class:late={isOverdue({ reminderAt: value, reminderDone: done })} class:done>
-      <Popover.Trigger class="rem-pill-btn" aria-label="Alterar lembrete: {fmtReminder(value)}">
-        <Bell size={11} />{fmtReminder(value)}{#if repeat}<Repeat size={11} aria-label="se repete" />{/if}
+      <Popover.Trigger class="rem-pill-btn" aria-label={t('Alterar lembrete: {quando}', { quando: fmtReminder(value) })}>
+        <Bell size={11} />{fmtReminder(value)}{#if repeat}<Repeat size={11} aria-label={t('se repete')} />{/if}
       </Popover.Trigger>
-      <button aria-label="Remover lembrete" onclick={() => onchange(null)}><X size={12} /></button>
+      <button aria-label={t('Remover lembrete')} onclick={() => onchange(null)}><X size={12} /></button>
     </span>
   {:else}
-    <Popover.Trigger class="icon-btn {value != null ? 'active' : ''}" aria-label="Lembrete"><Bell size={19} /></Popover.Trigger>
+    <Popover.Trigger class="icon-btn {value != null ? 'active' : ''}" aria-label={t('Lembrete')}><Bell size={19} /></Popover.Trigger>
   {/if}
   <Popover.Portal>
     <Popover.Content class="pop" align={variant === 'pill' ? 'start' : 'end'} sideOffset={6}>
-      <p class="pop-title">Lembrar de mim</p>
+      <p class="pop-title">{t('Lembrar de mim')}</p>
       <div class="quick">
         {#each quick as [label, at] (label)}
           <button onclick={() => pick(at)}><Clock size={15} /><span>{label}</span><small>{fmtReminder(at)}</small></button>
         {/each}
       </div>
       <label class="field">
-        <span>Data e hora</span>
+        <span>{t('Data e hora')}</span>
         <input
           id="lembrete-data"
           type="datetime-local"
@@ -62,13 +63,13 @@
       </label>
       {#if value != null && onrepeat}
         <div class="field">
-          <span>Repetir</span>
+          <span>{t('Repetir')}</span>
           <Picker id="lembrete-repetir" bind:value={() => repeat ?? 'none', (v) => onrepeat(v === 'none' ? null : v)} options={REPEATS} />
         </div>
       {/if}
       {#if value != null}
         <div class="pop-actions">
-          <button class="btn ghost" onclick={() => pick(null)}>Remover</button>
+          <button class="btn ghost" onclick={() => pick(null)}>{t('Remover')}</button>
         </div>
       {/if}
     </Popover.Content>

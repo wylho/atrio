@@ -3,6 +3,7 @@
   // agora num lugar só: o Ideario põe em volta a capa, o alfinete e a seleção; o Nodo põe o card no lugar do nó.
   import type { Snippet } from 'svelte'
   import { Check, Link2 } from '@lucide/svelte'
+  import { tn } from '../i18n.svelte'
   import { watchClip } from './clip'
   import { withHashtags } from './hashtags'
   import { FILE_ICONS } from './icons'
@@ -42,7 +43,7 @@
     >
       {#each blocks as b, i (i)}
         {#if b.kind === 'more'}
-          <p class="pv-more">+{b.count} {b.count === 1 ? 'item' : 'itens'}</p>
+          <p class="pv-more">{tn(b.count, '+{n} item', '+{n} itens')}</p>
         {:else if b.kind === 'task'}
           <p class="pv-task" class:done={b.done} style:--depth={b.depth}>
             <span class="box">{#if b.done}<Check size={10} strokeWidth={3} />{/if}</span><span>{@render rich(b.text)}</span>

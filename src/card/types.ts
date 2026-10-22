@@ -5,7 +5,8 @@ import type { Millis, RepeatKind } from '../types'
 
 export type NoteColor = 'none' | 'sand' | 'sage' | 'sky' | 'rose' | 'lilac' | 'butter'
 
-/** Cores de nota, na ordem dos menus, com a variável CSS de cada uma (`atrio.css`). */
+/** Cores de nota, na ordem dos menus, com a variável CSS de cada uma (`atrio.css`). O nome fica em português (é a
+ *  chave): quem mostra usa `t(c.label)`. */
 export const NOTE_COLORS: { id: NoteColor; label: string; css: string }[] = [
   { id: 'none', label: 'Padrão', css: 'var(--surface)' },
   { id: 'sand', label: 'Areia', css: 'var(--n-sand)' },

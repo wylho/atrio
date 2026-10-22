@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PDFDocumentProxy } from 'pdfjs-dist'
   import { openPdf } from './pdf'
+  import { t } from '../i18n.svelte'
 
   // Leitor de PDF próprio (pdf.js), igual nos três sistemas: a WebKitGTK do Linux não mostra PDF num iframe.
   // As páginas nascem como espaço reservado (com a proporção da primeira) e são desenhadas quando chegam perto
@@ -87,11 +88,11 @@
 
 <div class="pdf" bind:this={host} role="document" aria-label={name}>
   {#if failed}
-    <p class="pdf-msg">Não foi possível abrir este PDF aqui. Baixe para abrir no aplicativo do sistema.</p>
+    <p class="pdf-msg">{t('Não foi possível abrir este PDF aqui. Baixe para abrir no aplicativo do sistema.')}</p>
   {:else}
     {#each Array.from({ length: count }, (_, i) => i + 1) as n (n)}
       <div class="pdf-page" style:aspect-ratio="1 / {ratio}" data-page={n} {@attach (el) => page(el, n)}></div>
     {/each}
   {/if}
 </div>
-{#if count > 1}<span class="pdf-count" aria-live="polite">{current} de {count}</span>{/if}
+{#if count > 1}<span class="pdf-count" aria-live="polite">{t('{atual} de {total}', { atual: current, total: count })}</span>{/if}

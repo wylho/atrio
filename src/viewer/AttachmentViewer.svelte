@@ -5,6 +5,7 @@
   import type { Snippet } from 'svelte'
   import { Dialog } from 'bits-ui'
   import { Download, X } from '@lucide/svelte'
+  import { t } from '../i18n.svelte'
   import AudioPlayer from '../ui/AudioPlayer.svelte'
   import PdfViewer from './PdfViewer.svelte'
   import { FILE_ICONS, FILE_LABELS } from '../card/icons'
@@ -32,12 +33,12 @@
   } = $props()
 
   /** "image/jpeg" → "JPG", "image/svg+xml" → "SVG". */
-  const formatOf = (mime: string) => (mime.split('/')[1] ?? '').split('+')[0].replace('jpeg', 'jpg').toUpperCase() || 'Arquivo'
+  const formatOf = (mime: string) => (mime.split('/')[1] ?? '').split('+')[0].replace('jpeg', 'jpg').toUpperCase() || t('Arquivo')
 
   async function copy(hex: string) {
     try {
       await navigator.clipboard.writeText(hex)
-      say(`${hex} copiado`)
+      say(t('{cor} copiado', { cor: hex }))
     } catch {
       say(hex)
     }
@@ -51,7 +52,7 @@
       {#if att}
         {@const media = mediaUrl(att.hash)}
         <div class="lb-top">
-          <Dialog.Close class="icon-btn on-dark" aria-label="Fechar"><X size={20} /></Dialog.Close>
+          <Dialog.Close class="icon-btn on-dark" aria-label={t('Fechar')}><X size={20} /></Dialog.Close>
           <Dialog.Title class="lb-title">{att.name}</Dialog.Title>
         </div>
         {#if att.kind === 'image'}
@@ -66,9 +67,9 @@
           <div class="lb-media">
             <span class="lb-media-ico"><Icon size={40} /></span>
             {#if att.kind === 'audio'}<div class="lb-audio"><AudioPlayer src={media} label={att.name} /></div>{/if}
-            {#if att.kind === 'video'}<p>Vídeo de exemplo, sem conteúdo nesta prévia</p>{/if}
+            {#if att.kind === 'video'}<p>{t('Vídeo de exemplo, sem conteúdo nesta prévia')}</p>{/if}
             {#if att.kind !== 'audio' && att.kind !== 'video'}
-              <p>{media ? 'Sem visualização para este tipo: baixe para abrir no aplicativo do sistema.' : 'Arquivo de exemplo, sem conteúdo nesta prévia.'}</p>
+              <p>{media ? t('Sem visualização para este tipo: baixe para abrir no aplicativo do sistema.') : t('Arquivo de exemplo, sem conteúdo nesta prévia.')}</p>
             {/if}
           </div>
         {/if}
@@ -76,7 +77,7 @@
           {#if att.palette}
             <div class="lb-pal">
               {#each att.palette as p, i (i)}
-                <button onclick={() => copy(p)} aria-label="Copiar {p}">
+                <button onclick={() => copy(p)} aria-label={t('Copiar {cor}', { cor: p })}>
                   <i style:background={p}></i>
                   <code>{p}</code>
                 </button>
@@ -85,9 +86,9 @@
           {/if}
           <p class="lb-opt">
             {#if att.kind !== 'image'}
-              <b>{FILE_LABELS[att.kind]} · {fmtBytes(att.bytes)}</b>
+              <b>{t(FILE_LABELS[att.kind])} · {fmtBytes(att.bytes)}</b>
             {:else if att.origBytes}
-              <span>Original {fmtBytes(att.origBytes)}</span>
+              <span>{t('Original {tamanho}', { tamanho: fmtBytes(att.origBytes) })}</span>
               <span class="arrow">→</span>
               <b>WebP {fmtBytes(att.bytes)}</b>
               <span class="good">−{Math.round((1 - att.bytes / att.origBytes) * 100)}%</span>
@@ -97,7 +98,7 @@
             {/if}
           </p>
           <div class="lb-actions">
-            <button class="btn ghost" onclick={() => ondownload(att)}><Download size={16} />Baixar</button>
+            <button class="btn ghost" onclick={() => ondownload(att)}><Download size={16} />{t('Baixar')}</button>
             {@render actions?.(att)}
           </div>
         </div>

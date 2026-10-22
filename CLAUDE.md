@@ -97,6 +97,13 @@ para o que os dois núcleos compartilham (dependência git do Cargo, na mesma ta
   tradução aparece em português; `{nome}` com `vars`; `tn(n, um, vários)` para plural; `setLocale('auto'|'en'|'pt-BR')`
   guarda no aparelho (`atrio.locale`) e põe o `lang` no `<html>`; `systemLocale` (português para qualquer `pt-*`,
   inglês para o resto); `LOCALES` para o seletor das Configurações; `intlLocale()` para datas e números.
+- **0.18.1**: **o Atrio em inglês**: todo texto da interface passa por `t`/`tn` (card, pílulas, barra do topo,
+  editor, menus de bloco, lembrete, status, etiquetas, emoji, câmera, gravador, visualizador), com o dicionário em
+  `src/i18n/en.ts` (registrado no `i18n.svelte.ts`). Os rótulos dos dados (`STATUS`, `NOTE_COLORS`, `FILE_LABELS`,
+  grupos de emoji, `LOCALES`, nomes e dicas das paletas) ficam em português, que é a chave: quem mostra usa
+  `t(label)` (os apps também). Datas e tamanhos seguem `intlLocale()` ("Today, 9:00", "5 min ago", "1.5 MB"); o
+  seletor de emoji carrega o `emojibase-data/en` em inglês. Testes rodam em português (`tests/setup.ts`) e
+  `tests/i18n.test.ts` troca para o inglês e volta.
 - Em uso: o Ideario (card inteiro, `NoteEditor`) e o Nodo (o nó é o card: `CardBody` + `CardPills` no mapa,
   `CardDialog` + `NoteEditor` ao abrir, com `features({ category: false, links: false })`: fotos, arquivos, câmera e
   gravador entram no `.nodo`, um zip com os anexos).

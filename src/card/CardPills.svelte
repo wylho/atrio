@@ -4,6 +4,7 @@
   // pílulas são só texto. Com `onstatus`, o card que tem status mostra o seletor de três cores, para mudar ali mesmo
   // (pedido do usuário: mudar o status sem abrir a nota).
   import { Bell, Paperclip, Repeat } from '@lucide/svelte'
+  import { t } from '../i18n.svelte'
   import { fmtReminder, isOverdue } from '../util/format'
   import StatusToggle from '../ui/StatusToggle.svelte'
   import { hasStatus, STATUS, statusOf } from './meta'
@@ -39,17 +40,17 @@
   const toggle = $derived(!!onstatus && hasStatus(n))
 </script>
 
-{#if toggle && onstatus}<StatusToggle value={statusOf(n)} onchange={onstatus} label="Status" />{/if}
+{#if toggle && onstatus}<StatusToggle value={statusOf(n)} onchange={onstatus} label={t('Status')} />{/if}
 
 {#if reminderAt != null}
-  <span class="pill" class:late={isOverdue(n)} class:done={reminderDone} class:doing={reminderDoing && !reminderDone}><Bell size={11} />{fmtReminder(reminderAt)}{#if reminderRepeat}<Repeat size={11} aria-label="se repete" />{/if}</span>
+  <span class="pill" class:late={isOverdue(n)} class:done={reminderDone} class:doing={reminderDoing && !reminderDone}><Bell size={11} />{fmtReminder(reminderAt)}{#if reminderRepeat}<Repeat size={11} aria-label={t('se repete')} />{/if}</span>
 {:else if statusOn && !toggle}
   {@const st = statusOf(n)}
-  <span class="pill"><i class="dot" style:background={STATUS[st].color}></i>{STATUS[st].label}</span>
+  <span class="pill"><i class="dot" style:background={STATUS[st].color}></i>{t(STATUS[st].label)}</span>
 {/if}
 {#if category}
   {#if oncategory}
-    <button class="pill cat" title="Filtrar por {category.name}" onclick={(e) => { e.stopPropagation(); oncategory() }}>
+    <button class="pill cat" title={t('Filtrar por {nome}', { nome: category.name })} onclick={(e) => { e.stopPropagation(); oncategory() }}>
       <i class="dot" style:background={category.color}></i>{category.name.split(' ')[0]}
     </button>
   {:else}

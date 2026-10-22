@@ -4,10 +4,14 @@
 // registram os seus dicionários com `addMessages`; a escolha fica no aparelho (`localStorage`), e "Automático" segue
 // o idioma do sistema.
 
+import { EN } from './i18n/en'
+
 export type Locale = 'en' | 'pt-BR'
 /** A escolha da pessoa: um idioma ou o do sistema. */
 export type LocalePref = Locale | 'auto'
 
+/** Os rótulos ficam como estão (English e Português são o nome de cada idioma nele mesmo); "Automático" se mostra
+ *  com `t(label)`. */
 export const LOCALES: { id: LocalePref; label: string }[] = [
   { id: 'auto', label: 'Automático' },
   { id: 'en', label: 'English' },
@@ -45,6 +49,9 @@ const dicts: Record<Locale, Map<string, string>> = { en: new Map(), 'pt-BR': new
 export function addMessages(locale: Locale, messages: Record<string, string>) {
   for (const [k, v] of Object.entries(messages)) dicts[locale].set(k, v)
 }
+
+// O inglês do próprio Atrio (os apps registram os deles por cima).
+addMessages('en', EN)
 
 /** Muda o idioma (e guarda a escolha no aparelho). */
 export function setLocale(pref: LocalePref) {

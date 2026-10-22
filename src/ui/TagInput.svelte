@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Hash, Plus } from '@lucide/svelte'
+  import { t } from '../i18n.svelte'
   import { fold, normalizeTag } from '../util/format'
   import type { TagCount } from '../types'
 
@@ -76,10 +77,10 @@
     bind:this={input}
     id="nova-tag"
     class="tag-input"
-    placeholder="+ tag"
+    placeholder={t('+ tag')}
     autocomplete="off"
     role="combobox"
-    aria-label="Nova tag"
+    aria-label={t('Nova tag')}
     aria-autocomplete="list"
     aria-expanded={open && options.length > 0}
     aria-controls={listId}
@@ -94,8 +95,8 @@
     }}
   />
   {#if open && options.length}
-    <div class="menu tag-suggest" id={listId} role="listbox" aria-label="Tags que já existem">
-      {#if !typed}<div class="tag-suggest-head">Tags usadas</div>{/if}
+    <div class="menu tag-suggest" id={listId} role="listbox" aria-label={t('Tags que já existem')}>
+      {#if !typed}<div class="tag-suggest-head">{t('Tags usadas')}</div>{/if}
       {#each options as o, i (o.tag + o.isNew)}
         <div
           id="{listId}-{i}"
@@ -112,7 +113,7 @@
           }}
           onkeydown={() => {}}
         >
-          {#if o.isNew}<Plus size={16} /><span class="grow">Criar <b>#{o.tag}</b></span>
+          {#if o.isNew}<Plus size={16} /><span class="grow">{t('Criar')} <b>#{o.tag}</b></span>
           {:else}<Hash size={16} /><span class="grow">{o.tag}</span><span class="count">{o.count}</span>{/if}
         </div>
       {/each}

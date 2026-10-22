@@ -1,4 +1,5 @@
 // Emoji grande de capa da nota. A regra é a mesma do núcleo (`clean_emoji` em src-tauri/src/store.rs).
+import type { Locale } from '../i18n.svelte'
 
 /** Um emoji só (sequências com ZWJ, tom de pele, bandeiras e teclas incluídas), sem letras nem espaços; senão, null. */
 export function cleanEmoji(s: string): string | null {
@@ -24,18 +25,19 @@ export interface EmojiGroup {
   items: EmojiItem[]
 }
 
-// Grupos do Unicode na ordem de sempre (o 2 são os componentes, como tom de pele: não entram).
+// Grupos do Unicode na ordem de sempre (o 2 são os componentes, como tom de pele: não entram). Os nomes ficam em
+// português (são as chaves): o seletor mostra `t(g.name)`.
 const GROUPS = ['Sorrisos e emoção', 'Pessoas', '', 'Animais e natureza', 'Comida e bebida', 'Viagens e lugares', 'Atividades', 'Objetos', 'Símbolos', 'Bandeiras']
 /** Emojis até a versão 14 (2021): os mais novos ainda aparecem como quadradinho em muitos sistemas. */
 const MAX_VERSION = 14
 
 const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase()
 
-let groups: Promise<EmojiGroup[]> | null = null
+const groups: Partial<Record<Locale, Promise<EmojiGroup[]>>> = {}
 
-/** Lista com os nomes em português, carregada só quando o seletor abre. */
-export function loadEmojis(): Promise<EmojiGroup[]> {
-  groups ??= import('emojibase-data/pt/data.json').then(({ default: data }) => {
+/** Lista com os nomes no idioma (português ou inglês), carregada só quando o seletor abre. */
+export function loadEmojis(locale: Locale = 'pt-BR'): Promise<EmojiGroup[]> {
+  return (groups[locale] ??= (locale === 'en' ? import('emojibase-data/en/data.json') : import('emojibase-data/pt/data.json')).then(({ default: data }) => {
     const out: EmojiGroup[] = GROUPS.map((name) => ({ name, items: [] }))
     for (const d of data as { emoji: string; label: string; tags?: string[]; group?: number; version: number }[]) {
       if (d.group == null || d.group === 2 || !GROUPS[d.group] || d.version > MAX_VERSION) continue
@@ -43,8 +45,7 @@ export function loadEmojis(): Promise<EmojiGroup[]> {
       out[d.group].items.push({ e: d.emoji, label: d.label, name: words(d.label), keys: words([d.label, ...(d.tags ?? [])].join(' ')) })
     }
     return out.filter((g) => g.items.length)
-  })
-  return groups
+  }))
 }
 
 /** Busca sem acento, por começo de palavra: todas as palavras digitadas precisam aparecer. Primeiro os emojis cujo

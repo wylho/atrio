@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Pause, Play } from '@lucide/svelte'
+  import { t } from '../i18n.svelte'
 
   // Player compacto, igual em todos os sistemas (o <audio controls> nativo muda muito de um para outro).
   let { src, label }: { src: string; label: string } = $props()
@@ -18,7 +19,7 @@
 </script>
 
 <div class="player">
-  <button class="player-btn" onclick={toggle} aria-label={playing ? `Pausar ${label}` : `Tocar ${label}`} disabled={!src}>
+  <button class="player-btn" onclick={toggle} aria-label={playing ? t('Pausar {nome}', { nome: label }) : t('Tocar {nome}', { nome: label })} disabled={!src}>
     {#if playing}<Pause size={16} fill="currentColor" />{:else}<Play size={16} fill="currentColor" />{/if}
   </button>
   <input
@@ -29,7 +30,7 @@
     step="0.01"
     value={time}
     style:--p="{duration ? (time / duration) * 100 : 0}%"
-    aria-label="Posição em {label}"
+    aria-label={t('Posição em {nome}', { nome: label })}
     oninput={(e) => audio && (audio.currentTime = Number(e.currentTarget.value))}
     disabled={!src}
   />

@@ -1,6 +1,7 @@
 // Os metadados do card e as regras de lembrete e status, as mesmas em todos os apps (vieram do editor do Ideario).
 
 import type { Millis, NoteColor, ReminderStatus, RepeatKind } from '../types'
+import { t } from '../i18n.svelte'
 import { nextOccurrence } from '../util/reminders'
 
 /** O que todo card tem além do texto. O app pode guardar mais coisas no mesmo objeto (o Ideario: fixada, arquivada…). */
@@ -29,7 +30,8 @@ export function emptyMeta(over: Partial<CardMeta> = {}): CardMeta {
   }
 }
 
-/** Nome e cor de cada status (seletor de três cores, colunas do Kanban). */
+/** Nome e cor de cada status (seletor de três cores, colunas do Kanban). O nome fica em português (é a chave): quem
+ *  mostra usa `t(STATUS[s].label)`. */
 export const STATUS: Record<ReminderStatus, { label: string; color: string }> = {
   todo: { label: 'A fazer', color: 'var(--st-todo)' },
   doing: { label: 'Em andamento', color: 'var(--st-doing)' },
@@ -68,7 +70,7 @@ export function setStatus(meta: CardMeta, to: ReminderStatus | 'none', now = Dat
   if (to === 'done' && meta.reminderAt != null && meta.reminderRepeat) {
     meta.reminderAt = nextOccurrence(meta.reminderAt, meta.reminderRepeat, now)
     meta.reminderDone = false
-    msg = 'Feito por esta vez'
+    msg = t('Feito por esta vez')
   } else meta.reminderDone = to === 'done'
   meta.reminderDoing = to === 'doing'
   return msg

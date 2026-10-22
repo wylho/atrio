@@ -7,6 +7,7 @@
   import type { Snippet } from 'svelte'
   import type { HTMLAttributes } from 'svelte/elements'
   import { Check, Pin, PinOff } from '@lucide/svelte'
+  import { t } from '../i18n.svelte'
   import CardBody from './CardBody.svelte'
   import CardPills from './CardPills.svelte'
   import { FILE_ICONS } from './icons'
@@ -103,7 +104,7 @@
     <!-- Só com mouse por cima (ou já selecionada): marcar para seleção múltipla. -->
     <button
       class="card-check"
-      aria-label={selected ? 'Desmarcar nota' : 'Selecionar nota'}
+      aria-label={selected ? t('Desmarcar nota') : t('Selecionar nota')}
       aria-pressed={selected}
       onclick={(e) => {
         e.stopPropagation()
@@ -114,8 +115,8 @@
   {#if onpin && !selecting}
     <button
       class="card-pin"
-      aria-label={card.pinned ? 'Desafixar' : 'Fixar'}
-      title={card.pinned ? 'Desafixar' : 'Fixar'}
+      aria-label={card.pinned ? t('Desafixar') : t('Fixar')}
+      title={card.pinned ? t('Desafixar') : t('Fixar')}
       onclick={(e) => {
         e.stopPropagation()
         onpin()

@@ -1,4 +1,6 @@
-// Datas, tamanhos e texto no jeito do Ideario e do Nodo (pt-BR). Veio de ideario/src/lib/format.ts.
+// Datas, tamanhos e texto no jeito do Ideario e do Nodo, no idioma escolhido (`intlLocale`). Veio de
+// ideario/src/lib/format.ts.
+import { intlLocale, t } from '../i18n.svelte'
 import type { Millis } from '../types'
 
 const HOUR = 3_600_000
@@ -13,42 +15,46 @@ export function dayDiff(ms: Millis, now = Date.now()): number {
   return Math.round((a.getTime() - b.getTime()) / DAY)
 }
 
-export const fmtTime = (ms: Millis) => new Date(ms).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+export const fmtTime = (ms: Millis) => new Date(ms).toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit' })
 
 export function fmtReminder(ms: Millis): string {
-  const t = fmtTime(ms)
+  const hora = fmtTime(ms)
   const dd = dayDiff(ms)
-  if (dd === 0) return `Hoje, ${t}`
-  if (dd === 1) return `Amanhã, ${t}`
-  if (dd === -1) return `Ontem, ${t}`
-  return `${new Date(ms).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })}, ${t}`
+  if (dd === 0) return t('Hoje, {hora}', { hora })
+  if (dd === 1) return t('Amanhã, {hora}', { hora })
+  if (dd === -1) return t('Ontem, {hora}', { hora })
+  const dia = new Date(ms).toLocaleDateString(intlLocale(), { weekday: 'short', day: 'numeric', month: 'short' })
+  return t('{dia}, {hora}', { dia, hora })
 }
 
-export const fmtShortDate = (ms: Millis) => new Date(ms).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })
+export const fmtShortDate = (ms: Millis) => new Date(ms).toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short' })
 
 export const isOverdue = (n: { reminderAt: Millis | null; reminderDone: boolean }, now = Date.now()) =>
   n.reminderAt != null && !n.reminderDone && n.reminderAt < now
 
-/** Tamanho em KB ou MB, com vírgula decimal. */
+/** Tamanho em KB ou MB, com a vírgula ou o ponto decimal do idioma. */
 export function fmtBytes(bytes: number): string {
   const kb = Math.round(bytes / 1024)
-  if (kb >= 1024) return `${(kb / 1024).toFixed(1).replace('.', ',')} MB`
+  if (kb >= 1024) {
+    const mb = (kb / 1024).toFixed(1)
+    return `${intlLocale() === 'pt-BR' ? mb.replace('.', ',') : mb} MB`
+  }
   return `${kb} KB`
 }
 
 /** "agora", "há 5 min", "há 3 h", "há 2 d". */
 export function ago(ms: Millis, now = Date.now()): string {
   const diff = Math.max(0, now - ms)
-  if (diff < 60_000) return 'agora'
-  if (diff < HOUR) return `há ${Math.floor(diff / 60_000)} min`
-  if (diff < DAY) return `há ${Math.floor(diff / HOUR)} h`
-  return `há ${Math.round(diff / DAY)} d`
+  if (diff < 60_000) return t('agora')
+  if (diff < HOUR) return t('há {n} min', { n: Math.floor(diff / 60_000) })
+  if (diff < DAY) return t('há {n} h', { n: Math.floor(diff / HOUR) })
+  return t('há {n} d', { n: Math.round(diff / DAY) })
 }
 
 /** "hoje" ou "há N d", usado na lista de arquivos. */
 export function daysAgo(ms: Millis, now = Date.now()): string {
   const d = -dayDiff(ms, now)
-  return d <= 0 ? 'hoje' : `há ${d} d`
+  return d <= 0 ? t('hoje') : t('há {n} d', { n: d })
 }
 
 /** Data local às `hour`:00, `dayOffset` dias a partir de hoje. */

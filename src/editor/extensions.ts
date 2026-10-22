@@ -13,6 +13,7 @@ import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import type { Node as PMNode } from '@tiptap/pm/model'
 import { ImageRow, MediaLayout, NoteFile, NoteImage, type MediaInfo } from './media'
 import { LinkCard, type LinkOptions } from './link'
+import { t } from '../i18n.svelte'
 
 /** Marcar (ou desmarcar) um item de checklist faz o mesmo com os subitens dele, como no Google Keep. Só para o que
  *  se faz aqui: o que chega de outro aparelho (Yjs) já vem como lá ficou. */
@@ -190,7 +191,7 @@ export function noteExtensions(opts: {
     // Subitens em vários níveis (Tab recua, Shift+Tab volta), como nos marcadores.
     TaskItem.configure({
       nested: true,
-      a11y: { checkboxLabel: (node, checked) => `${checked ? 'Desmarcar' : 'Marcar'} “${node.textContent || 'item vazio'}”` },
+      a11y: { checkboxLabel: (node, checked) => t(checked ? 'Desmarcar “{item}”' : 'Marcar “{item}”', { item: node.textContent || t('item vazio') }) },
     }),
     NoteImage.configure({ media: opts.media ?? (() => ({ src: '' })), load: opts.load }),
     ImageRow,

@@ -2,6 +2,7 @@
   import { Dialog } from 'bits-ui'
   import { Camera, X } from '@lucide/svelte'
   import { say } from '../util/notify'
+  import { t } from '../i18n.svelte'
 
   // Tira uma foto com a câmera do aparelho e entrega como arquivo (depois passa pelo pipeline como qualquer foto).
   let { open = $bindable(false), oncapture }: { open?: boolean; oncapture: (photo: Blob) => void } = $props()
@@ -22,7 +23,7 @@
         ready = true
       })
       .catch(() => {
-        say('Sem acesso à câmera')
+        say(t('Sem acesso à câmera'))
         open = false
       })
     return () => {
@@ -49,13 +50,13 @@
     <Dialog.Overlay class="overlay dark" />
     <Dialog.Content class="camera" aria-describedby={undefined}>
       <div class="lb-top">
-        <Dialog.Close class="icon-btn on-dark" aria-label="Fechar"><X size={20} /></Dialog.Close>
-        <Dialog.Title class="lb-title">Câmera</Dialog.Title>
+        <Dialog.Close class="icon-btn on-dark" aria-label={t('Fechar')}><X size={20} /></Dialog.Close>
+        <Dialog.Title class="lb-title">{t('Câmera')}</Dialog.Title>
       </div>
       <!-- svelte-ignore a11y_media_has_caption -->
       <video bind:this={video} autoplay playsinline muted></video>
       <div class="camera-actions">
-        <button class="shutter" aria-label="Tirar foto" onclick={shoot} disabled={!ready}><Camera size={24} /></button>
+        <button class="shutter" aria-label={t('Tirar foto')} onclick={shoot} disabled={!ready}><Camera size={24} /></button>
       </div>
     </Dialog.Content>
   </Dialog.Portal>

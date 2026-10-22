@@ -1,10 +1,11 @@
 <script lang="ts">
   import type { ReminderStatus } from '../types'
+  import { t } from '../i18n.svelte'
 
   // Status do lembrete num seletor de três cores (vermelho, amarelo, verde): cada bolinha é um botão.
-  let { value, onchange, label = 'Status do lembrete' }: { value: ReminderStatus; onchange: (s: ReminderStatus) => void; label?: string } = $props()
+  let { value, onchange, label }: { value: ReminderStatus; onchange: (s: ReminderStatus) => void; label?: string } = $props()
 
-  const STATES: [ReminderStatus, string][] = [['todo', 'A fazer'], ['doing', 'Em andamento'], ['done', 'Concluído']]
+  const STATES = $derived<[ReminderStatus, string][]>([['todo', t('A fazer')], ['doing', t('Em andamento')], ['done', t('Concluído')]])
 </script>
 
 <!-- Setas do teclado andam entre as três cores, como num grupo de opções. -->
@@ -12,7 +13,7 @@
   class="status-toggle"
   role="radiogroup"
   tabindex="-1"
-  aria-label={label}
+  aria-label={label ?? t('Status do lembrete')}
   onkeydown={(e) => {
     const i = STATES.findIndex(([s]) => s === value)
     const to = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? i + 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? i - 1 : -1

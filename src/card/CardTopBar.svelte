@@ -8,6 +8,7 @@
   import { DropdownMenu } from 'bits-ui'
   import { ArrowLeft, BookOpen, Check, ChevronRight, CircleDashed, Minimize2, MoreVertical, Pin, PinOff, SmilePlus } from '@lucide/svelte'
   import ReminderPopover from '../ui/ReminderPopover.svelte'
+  import { t } from '../i18n.svelte'
   import { hasStatus, STATUS, statusOf, type CardMeta } from './meta'
   import type { Millis, ReminderStatus } from '../types'
 
@@ -22,7 +23,7 @@
     meta,
     card,
     onback,
-    backLabel = 'Voltar',
+    backLabel,
     label,
     wide = false,
     docMode = false,
@@ -53,19 +54,19 @@
 </script>
 
 <div class="ed-top">
-  <button class="icon-btn" aria-label={backLabel} onclick={onback}><ArrowLeft size={20} /></button>
+  <button class="icon-btn" aria-label={backLabel ?? t('Voltar')} onclick={onback}><ArrowLeft size={20} /></button>
   <span class="ed-saved">{@render label?.()}</span>
   {#if wide && ondoc}<button
       class="icon-btn"
       aria-pressed={docMode}
-      aria-label={docMode ? 'Voltar ao card' : 'Abrir como documento'}
-      title={docMode ? 'Voltar ao card' : 'Abrir como documento (página inteira)'}
+      aria-label={docMode ? t('Voltar ao card') : t('Abrir como documento')}
+      title={docMode ? t('Voltar ao card') : t('Abrir como documento (página inteira)')}
       onclick={ondoc}
     >
       {#if docMode}<Minimize2 size={19} />{:else}<BookOpen size={19} />{/if}
     </button>{/if}
   {#if onpin}
-    <button class="icon-btn" aria-label={pinned ? 'Desafixar' : 'Fixar'} aria-pressed={pinned} onclick={onpin}>
+    <button class="icon-btn" aria-label={pinned ? t('Desafixar') : t('Fixar')} aria-pressed={pinned} onclick={onpin}>
       {#if pinned}<PinOff size={19} />{:else}<Pin size={19} />{/if}
     </button>
   {/if}
@@ -76,7 +77,7 @@
     onrepeat={(r) => (meta.reminderRepeat = r)}
   />
   <DropdownMenu.Root>
-    <DropdownMenu.Trigger class="icon-btn" aria-label="Mais opções"><MoreVertical size={19} /></DropdownMenu.Trigger>
+    <DropdownMenu.Trigger class="icon-btn" aria-label={t('Mais opções')}><MoreVertical size={19} /></DropdownMenu.Trigger>
     <DropdownMenu.Portal>
       <DropdownMenu.Content class="menu" align="end" sideOffset={6}>
         {#if menu}
@@ -84,21 +85,21 @@
         {:else}
           {@render menuStart?.()}
           <DropdownMenu.Sub>
-            <DropdownMenu.SubTrigger class="menu-item"><CircleDashed size={16} /><span class="grow">Status</span><ChevronRight size={16} /></DropdownMenu.SubTrigger>
+            <DropdownMenu.SubTrigger class="menu-item"><CircleDashed size={16} /><span class="grow">{t('Status')}</span><ChevronRight size={16} /></DropdownMenu.SubTrigger>
             <DropdownMenu.SubContent class="menu" sideOffset={4}>
               {#each ['todo', 'doing', 'done'] as const as st (st)}
                 <DropdownMenu.Item class="menu-item" onSelect={() => card?.status(st)}>
-                  <i class="menu-swatch" style:background={STATUS[st].color}></i><span class="grow">{STATUS[st].label}</span>
+                  <i class="menu-swatch" style:background={STATUS[st].color}></i><span class="grow">{t(STATUS[st].label)}</span>
                   {#if hasStatus(meta) && statusOf(meta) === st}<span class="menu-check"><Check size={15} /></span>{/if}
                 </DropdownMenu.Item>
               {/each}
               {#if meta.statusOn && meta.reminderAt == null}
                 <DropdownMenu.Separator class="menu-sep" />
-                <DropdownMenu.Item class="menu-item" onSelect={() => card?.status('none')}><span class="grow">Sem status</span></DropdownMenu.Item>
+                <DropdownMenu.Item class="menu-item" onSelect={() => card?.status('none')}><span class="grow">{t('Sem status')}</span></DropdownMenu.Item>
               {/if}
             </DropdownMenu.SubContent>
           </DropdownMenu.Sub>
-          <DropdownMenu.Item class="menu-item" onSelect={() => card?.chooseEmoji()}><SmilePlus size={16} />{meta.emoji ? 'Mudar emoji de capa' : 'Emoji de capa'}</DropdownMenu.Item>
+          <DropdownMenu.Item class="menu-item" onSelect={() => card?.chooseEmoji()}><SmilePlus size={16} />{meta.emoji ? t('Mudar emoji de capa') : t('Emoji de capa')}</DropdownMenu.Item>
           {@render menuEnd?.()}
         {/if}
       </DropdownMenu.Content>

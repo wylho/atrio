@@ -8,6 +8,7 @@ import { Fragment, type Node as PMNode } from '@tiptap/pm/model'
 import { NodeSelection, Plugin, PluginKey, type EditorState, type Transaction } from '@tiptap/pm/state'
 import type { EditorView } from '@tiptap/pm/view'
 import { dropTargetAt, moveNodeTo } from './blocks'
+import { t } from '../i18n.svelte'
 
 /** Fotos por linha, no máximo. */
 export const ROW_MAX = 4
@@ -384,7 +385,7 @@ export const MediaLayout = Extension.create<{
             }
             // HTML que é só uma imagem embutida (data:), sem arquivo: vira foto.
             if (onlyImage?.startsWith('data:')) {
-              void fetch(onlyImage).then((r) => r.blob()).then((b) => onFiles([new File([b], 'imagem.' + (b.type.split('/')[1] || 'png'), { type: b.type })], at))
+              void fetch(onlyImage).then((r) => r.blob()).then((b) => onFiles([new File([b], t('imagem') + '.' + (b.type.split('/')[1] || 'png'), { type: b.type })], at))
               return true
             }
             // Nada que a página leia (o sistema não entregou a imagem ao navegador): pergunta ao sistema.
