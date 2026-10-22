@@ -87,6 +87,9 @@ para o que os dois núcleos compartilham (dependência git do Cargo, na mesma ta
 - **0.16.0**: **`CardTopBar`**, a barra do topo do card aberto, a mesma nos dois apps (voltar, rótulo, modo documento
   na janela larga, fixar quando o app tem, lembrete e o menu ⋮ com Status e Emoji de capa). Itens do app pelos
   snippets `menuStart` (antes de Status) e `menuEnd` (depois do emoji); `menu` troca o menu inteiro.
+- **0.17.0**: **`@wylho/atrio/viewer`**: o visualizador de anexos do Ideario (`AttachmentViewer`: foto inteira com
+  paleta e economia do WebP, leitor de PDF próprio `PdfViewer`, vídeo, áudio, ícone do tipo; Baixar e as ações do app
+  no snippet `actions`). Pacote à parte porque traz o `pdfjs-dist` (dependência opcional, carregada só ao abrir PDF).
 - Em uso: o Ideario (card inteiro, `NoteEditor`) e o Nodo (o nó é o card: `CardBody` + `CardPills` no mapa,
   `CardDialog` + `NoteEditor` ao abrir, com `features({ category: false, links: false })`: fotos, arquivos, câmera e
   gravador entram no `.nodo`, um zip com os anexos).
