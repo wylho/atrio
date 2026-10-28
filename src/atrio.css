@@ -958,6 +958,14 @@ button { cursor: pointer; }
 /* imprimir / PDF: só a nota, no papel, com as fotos inteiras; áudio e vídeo viram o cartão com o nome */
 @media print {
   html:has(body.print-note), body.print-note, body.print-note #app { height: auto !important; overflow: visible !important; background: #fff !important; }
+  /* Papel é claro, mesmo com o app no escuro ou noutra paleta: as cores de texto, caixinhas e #etiquetas voltam às
+     claras (com o escuro, a margem da página saía preta e as caixinhas marcadas, apagadas). */
+  html:has(body.print-note) {
+    color-scheme: light !important;
+    --bg: #fff !important; --surface: #fff !important; --raised: #f7f9f8 !important; --fg: #16201c !important;
+    --muted: #5d6a65 !important; --line: #d6ddd9 !important; --card-edge: rgb(22 32 28 / .09) !important;
+    --accent: #2547c9 !important; --accent-soft: #e2e8fb !important; --on-accent: #fff !important;
+  }
   /* caixinhas marcadas e cartões com a cor deles (o navegador não imprime fundos se não pedir) */
   body.print-note .editor { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   body.print-note .nf-card .icon-btn { display: none !important; }
@@ -972,13 +980,47 @@ button { cursor: pointer; }
   body.print-note .ed-top, body.print-note .ed-tools, body.print-note .ed-meta, body.print-note .ed-tags,
   body.print-note .blk-handle, body.print-note .img-tools, body.print-note .tag-suggest { display: none !important; }
   body.print-note .ed-blocks { margin: 0 !important; padding: 0 !important; }
-  body.print-note .ed-title { font-size: 26pt; color: #111; }
   body.print-note .ed-body { font-size: 12pt; line-height: 1.6; color: #111; }
   body.print-note img, body.print-note .img-row, body.print-note .note-file { break-inside: avoid; }
   /* áudio: some o player, fica o nome e a duração ("0:00 / 0:42"); vídeo: só o cartão */
   body.print-note audio, body.print-note video, body.print-note .player > button, body.print-note .player > input { display: none !important; }
   @page { margin: 18mm 16mm; }
+  /* O topo é o card da nota (escolha do usuário, opção C): no lugar do emoji, do título (um campo de texto, que no
+     papel cortava o título longo) e das pílulas da tela. As cores são as claras, mesmo com o app no escuro. */
+  body.print-note .ed-cover, body.print-note .ed-title { display: none !important; }
+  body.print-note .ed-print-card {
+    display: block; margin: 0 0 18pt; padding: 16pt 18pt 14pt; border-radius: 14pt; break-inside: avoid;
+    background: #f1f3f0; color: #111; -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  body.print-note .ed-print-card[data-color="sand"] { background: #f6e9d6; }
+  body.print-note .ed-print-card[data-color="sage"] { background: #e1eedd; }
+  body.print-note .ed-print-card[data-color="sky"] { background: #dde8f8; }
+  body.print-note .ed-print-card[data-color="rose"] { background: #f8e0e4; }
+  body.print-note .ed-print-card[data-color="lilac"] { background: #e9e2f6; }
+  body.print-note .ed-print-card[data-color="butter"] { background: #f8f0c8; }
+  body.print-note .pc-emoji { font-size: 34pt; line-height: 1; margin-bottom: 8pt; }
+  body.print-note .pc-title {
+    margin: 0; font-family: var(--font-display); font-size: 22pt; line-height: 1.2; font-weight: 650; letter-spacing: -.01em;
+    color: #111; overflow-wrap: anywhere;
+  }
+  body.print-note .pc-pills { display: flex; flex-wrap: wrap; gap: 5pt; margin-top: 10pt; font-size: 9pt; }
+  body.print-note .pc-pills span {
+    display: inline-flex; align-items: center; gap: 4pt; padding: 2pt 8pt; border-radius: 99pt; color: #333;
+    background: rgb(255 255 255 / .72); border: .75pt solid rgb(0 0 0 / .08);
+  }
+  body.print-note .pc-pills i { width: 6pt; height: 6pt; border-radius: 50%; flex: none; }
+  body.print-note .pc-st.todo { background: #e5484d; }
+  body.print-note .pc-st.doing { background: #e8a400; }
+  body.print-note .pc-st.done { background: #2f9e5c; }
+  /* o texto no papel: subtítulos, checklist e tabela arrumados para ler */
+  body.print-note .ed-body { font-size: 11.5pt; line-height: 1.55; padding: 0 4pt; }
+  body.print-note .prose h2 { font-size: 14pt; margin: 16pt 0 6pt; }
+  body.print-note .prose ul[data-type="taskList"] li { min-height: 0; margin: 3pt 0; gap: 8pt; }
+  body.print-note .prose ul[data-type="taskList"] li > label { height: 1.55em; }
+  body.print-note .prose table { font-size: 10.5pt; }
+  body.print-note .prose th { background: #f3f4f2 !important; }
 }
+.ed-print-card { display: none; }
 
 /* cartão de link (no editor e na exportação): imagem à esquerda, título, descrição e o site */
 .link-card {

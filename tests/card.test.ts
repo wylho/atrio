@@ -70,6 +70,47 @@ describe('NoteEditor', () => {
     unmount(app)
   })
 
+  it('no papel, o topo é o card da nota: cor, emoji, o título inteiro e as pílulas (opção C)', async () => {
+    const target = document.createElement('div')
+    document.body.append(target)
+    const title = 'Roteiro da viagem para a serra no feriado prolongado de novembro'
+    const app = mount(Harness, {
+      target,
+      props: {
+        features: features(),
+        content: '<p>Levar casaco. #frio</p>',
+        init: { title, emoji: '🏔️', color: 'sky', categoryId: 'c1', tags: ['viagem'], statusOn: true, reminderDoing: true },
+      },
+    })
+    flushSync()
+    await new Promise((r) => setTimeout(r, 0))
+    const card = target.querySelector('.ed-print-card')!
+    expect(card.getAttribute('data-color')).toBe('sky')
+    expect(card.getAttribute('aria-hidden')).toBe('true')
+    expect(card.querySelector('.pc-emoji')?.textContent).toBe('🏔️')
+    // o título vai inteiro, como texto (o campo de texto cortava no papel)
+    expect(card.querySelector('h1.pc-title')?.textContent).toBe(title)
+    const pills = [...card.querySelectorAll('.pc-pills span')].map((s) => s.textContent)
+    expect(pills).toEqual(['Trabalho', 'Em andamento', '#viagem', '#frio'])
+    expect(card.querySelector('.pc-st.doing')).not.toBeNull()
+    unmount(app)
+    target.remove()
+  })
+
+  it('no papel, sem título nem pílulas, o card tem só o que existe', async () => {
+    const target = document.createElement('div')
+    document.body.append(target)
+    const app = mount(Harness, { target, props: { features: features({ category: false }), content: '<p>só texto</p>', init: { title: '  ' } } })
+    flushSync()
+    await new Promise((r) => setTimeout(r, 0))
+    const card = target.querySelector('.ed-print-card')!
+    expect(card.getAttribute('data-color')).toBe('none')
+    expect(card.querySelector('.pc-title')).toBeNull()
+    expect(card.querySelector('.pc-pills')).toBeNull()
+    unmount(app)
+    target.remove()
+  })
+
   it('é exportado pelo @wylho/atrio/editor', () => {
     expect(NoteEditor).toBeTypeOf('function')
   })

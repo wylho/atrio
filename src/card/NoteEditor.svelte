@@ -33,12 +33,12 @@
   import StatusToggle from '../ui/StatusToggle.svelte'
   import TagInput from '../ui/TagInput.svelte'
   import { SEP, type MenuEntry } from '../util/menu'
-  import { hashTags } from '../util/format'
+  import { fmtReminder, hashTags } from '../util/format'
   import { t } from '../i18n.svelte'
   import { say } from '../util/notify'
   import type { Attachment } from '../types'
   import { NOTE_COLORS } from './types'
-  import { hasStatus, setReminder, setStatus, statusOf, type CardMeta } from './meta'
+  import { hasStatus, setReminder, setStatus, STATUS, statusOf, type CardMeta } from './meta'
   import type { CardFeatures, CardHost, DroppedFile } from './features'
 
   let {
@@ -633,6 +633,20 @@
 {@render top?.()}
 
 <div class="ed-scroll" onscroll={() => tick++}>
+  <!-- Só no papel (escolha do usuário, opção C): o topo do PDF é o card da nota, na cor dela, com o emoji, o título
+       inteiro (o campo de texto cortava o título ao imprimir) e as pílulas. Na tela, o editor de sempre. -->
+  <div class="ed-print-card" data-color={meta.color ?? 'none'} aria-hidden="true">
+    {#if features.emoji && meta.emoji}<div class="pc-emoji">{meta.emoji}</div>{/if}
+    {#if meta.title.trim()}<h1 class="pc-title">{meta.title}</h1>{/if}
+    {#if cat || (features.reminder && meta.reminderAt != null) || (features.status && hasStatus(meta)) || (features.tags && (meta.tags.length || extraTags.length))}
+      <div class="pc-pills">
+        {#if cat}<span><i style:background={cat.color}></i>{cat.name}</span>{/if}
+        {#if features.reminder && meta.reminderAt != null}<span>{t('Lembrete: {quando}', { quando: fmtReminder(meta.reminderAt) })}</span>{/if}
+        {#if features.status && hasStatus(meta)}<span><i class="pc-st {statusOf(meta)}"></i>{t(STATUS[statusOf(meta)].label)}</span>{/if}
+        {#if features.tags}{#each [...meta.tags, ...extraTags] as tag (tag)}<span>#{tag}</span>{/each}{/if}
+      </div>
+    {/if}
+  </div>
   {#if features.emoji}
     <div class="ed-cover" class:has={!!meta.emoji}>
       <EmojiPicker value={meta.emoji} onchange={(v) => (meta.emoji = v)} bind:open={emojiOpen} />

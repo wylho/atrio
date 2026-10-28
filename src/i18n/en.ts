@@ -223,4 +223,5 @@ export const EN: Record<string, string> = {
   '{n} colunas': '{n} columns',
   '{n} linha': '{n} row',
   '{n} linhas': '{n} rows',
+  'Lembrete: {quando}': 'Reminder: {quando}',
 }

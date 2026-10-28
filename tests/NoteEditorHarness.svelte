@@ -1,10 +1,11 @@
 <script lang="ts">
   // Um app de mentira em volta do card, para os testes: meta em $state, anfitrião mínimo.
   import { NoteEditor } from '../src/editor'
-  import { emptyMeta, type CardFeatures } from '../src/index'
+  import { emptyMeta, type CardFeatures, type CardMeta } from '../src/index'
 
-  let { features, content, onbody }: { features: CardFeatures; content: unknown; onbody?: (text: string) => void } = $props()
-  const meta = $state(emptyMeta({ title: 'Plano' }))
+  let { features, content, onbody, init = {} }: { features: CardFeatures; content: unknown; onbody?: (text: string) => void; init?: Partial<CardMeta> } = $props()
+  // svelte-ignore state_referenced_locally
+  const meta = $state(emptyMeta({ title: 'Plano', ...init }))
   let card: NoteEditor | undefined = $state()
 
   export function addFiles(files: { blob: Blob; name: string }[]) {

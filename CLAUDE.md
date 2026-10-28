@@ -120,6 +120,13 @@ para o que os dois núcleos compartilham (dependência git do Cargo, na mesma ta
   desenha `.pv-tsum`: "Tabela · 5 colunas × 12 linhas" (as linhas contam as que passaram das 8 da prévia) e os nomes
   das colunas em até 2 linhas; a tabela inteira só no card aberto. Os dados do bloco `table` não mudaram (busca,
   `#tags` e o `text` seguem iguais), então nenhum app refaz a prévia guardada.
+- **0.22.0**: **PDF da nota com o card no topo** (escolha do usuário, opção C, numa página com três jeitos; antes o
+  título longo saía cortado: no papel ele continuava sendo o campo de texto, menor que a letra impressa). O
+  `NoteEditor` tem um `.ed-print-card` que só aparece na impressão: a cor da nota (as claras), o emoji, o título
+  inteiro como texto e as pílulas (categoria, lembrete, status, etiquetas, também as `#tags` do texto); o campo do
+  título e o emoji da tela somem no papel. O papel é sempre claro (os tokens voltam aos claros em
+  `html:has(body.print-note)`; com o app no escuro a margem da página saía preta). Texto, subtítulos, checklist e
+  tabela com medidas de papel. Testes em `tests/card.test.ts` (e o `NoteEditorHarness` aceita `init`).
 - Em uso: o Ideario (card inteiro, `NoteEditor`) e o Nodo (o nó é o card: `CardBody` + `CardPills` no mapa,
   `CardDialog` + `NoteEditor` ao abrir, com `features({ category: false, links: false })`: fotos, arquivos, câmera e
   gravador entram no `.nodo`, um zip com os anexos).
