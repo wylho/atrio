@@ -1,6 +1,6 @@
 # Card aberto: CardSession
 
-Status: ready-for-agent
+Status: resolved
 Repos: atrio, nodo, ideario
 
 ## Pergunta
@@ -12,3 +12,7 @@ Começar por um teste que reproduz a perda do áudio (skill `diagnosing-bugs`/`t
 
 Junto: o Ideario passar a usar o `CardDialog` (o `Editor.svelte` ainda monta o próprio `Dialog` do bits-ui), para
 o card aberto ser o mesmo nos dois e a sessão do card morar num lugar só.
+
+## Answer
+
+Feito em 28/10/2026 no Atrio 0.23.0 (`CardSession`, `cardOpen`), os dois apps na tag. Nodo: `NodeNote.svelte` fecha pela sessão e `App.svelte` para atalhos e copiar/colar com o card aberto. Ideario: `CardDialog` no lugar do `Dialog` próprio.

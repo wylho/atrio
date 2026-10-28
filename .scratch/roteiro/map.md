@@ -21,7 +21,7 @@ porque ele é o hub: a pendência de um app que for peça comum vira tarefa do A
 | Nº | Tarefa | Repos | Status |
 |---|---|---|---|
 | 01 | Atualizar o `UNIFICACAO.md` (fase 3 feita, o que sobrou) | atrio | feita |
-| 02 | Card aberto: `CardSession` (salvar, `settle`, trava de atalhos) | atrio, nodo, ideario | needs-triage |
+| 02 | Card aberto: `CardSession` (salvar, `settle`, trava de atalhos) | atrio, nodo, ideario | feita |
 | 03 | Área de transferência v2 (lembrete, status, anexos) | atrio, ambos | needs-triage |
 | 04 | Unificação fase 4: casca da interface | atrio, ambos | needs-triage |
 | 05 | Unificação fase 5: MCP comum | atrio, ambos | needs-triage |
@@ -38,6 +38,7 @@ porque ele é o hub: a pendência de um app que for peça comum vira tarefa do A
 
 - 28/10: ordem do usuário: 01 e 13, depois 02.
 - [01](issues/01-unificacao-atualizada.md): `UNIFICACAO.md` com o estado de cada defeito (abertos: 6 a 11 e duas lacunas do 12).
+- [02](issues/02-card-session.md): Atrio 0.23.0, fechar espera a gravação e os atalhos param atrás do card.
 - [13](issues/13-nodo-proximo.md): "Próximo" do Nodo só com o que falta.
 
 ## Ainda sem forma
