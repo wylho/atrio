@@ -157,6 +157,13 @@ Single-context: `GLOSSARY.md` na raiz (quando houver); as decisões são as do `
   some; fechar duas vezes fecha uma; se não salvou, continua aberto) e `cardOpen()` vale enquanto há um `CardDialog`
   na tela (`trackCardOpen` no `onMount`), para os atalhos e o copiar/colar do app pararem atrás do card. Testes em
   `tests/session.test.ts`.
+- **0.24.0**: **área de transferência v2** (`CARD_FORMAT` 2, tarefa 03 do roteiro; defeito 11): o card leva
+  lembrete e status (`reminderAt`, `reminderRepeat`, `reminderDone`, `reminderDoing`, `statusOn`) e os **arquivos dos
+  anexos** (`files`: hash, nome, tipo e bytes em base64; escolha do usuário: arquivos junto, até `CLIP_FILES_LIMIT` =
+  25 MB por cópia, acima disso só a referência e um aviso). `attachCardFiles(cards, fetchFile)` busca os anexos
+  citados no Markdown e devolve o que ficou de fora; `importCardFiles(card, importFile)` entrega os arquivos ao app ao
+  colar e troca no Markdown o hash antigo pelo novo. `writeCard(s)` aceita a promessa dos cards (o `ClipboardItem`
+  recebe promessas: a cópia começa no gesto). A v1 continua sendo lida. Testes em `tests/clipboard.test.ts`.
 - Em uso: o Ideario (card inteiro, `NoteEditor`) e o Nodo (o nó é o card: `CardBody` + `CardPills` no mapa,
   `CardDialog` + `NoteEditor` ao abrir, com `features({ category: false, links: false })`: fotos, arquivos, câmera e
   gravador entram no `.nodo`, um zip com os anexos).

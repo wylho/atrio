@@ -12,7 +12,10 @@ export type { AttachmentKind, Attachment, LinkPreview, Millis, NoteColor, Previe
 export { ALL_FEATURES, features, type CardFeatures, type CardHost, type DroppedFile } from './card/features'
 export { emptyMeta, hasStatus, setReminder, setStatus, STATUS, statusOf, type CardMeta } from './card/meta'
 export {
+  attachCardFiles,
   CARD_FORMAT,
+  CLIP_FILES_LIMIT,
+  importCardFiles,
   cardFromHtml,
   cardsFromHtml,
   cardsToClipboard,
@@ -24,6 +27,7 @@ export {
   writeCard,
   writeCards,
   type ClipCard,
+  type ClipFile,
 } from './clipboard'
 
 // Peças de interface do card

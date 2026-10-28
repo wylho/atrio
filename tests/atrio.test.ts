@@ -50,7 +50,7 @@ describe('card na área de transferência', () => {
   it('ida e volta pelo HTML, com acentos e emoji', () => {
     const card = { title: 'Ideias — lançamento ✨', markdown: '- [ ] Revisar\n- **Prazo**: sexta', color: 'sky' as const, emoji: '🚀', tags: ['beta'] }
     const { html, text } = cardToClipboard(card)
-    expect(cardFromHtml(html)).toEqual(card)
+    expect(cardFromHtml(html)).toMatchObject(card)
     expect(text).toBe('# Ideias — lançamento ✨\n\n- [ ] Revisar\n- **Prazo**: sexta')
     // Legível para quem não é do Atrio, e sem HTML do usuário solto.
     expect(cardToClipboard({ title: '<b>x</b>', markdown: '' }).html).toContain('&lt;b&gt;x&lt;/b&gt;')
@@ -60,8 +60,8 @@ describe('card na área de transferência', () => {
     const a = { title: 'Feira', markdown: '- Banca', color: 'sky' as const, emoji: null, tags: [] }
     const b = { title: 'Vídeos', markdown: '', emoji: '🎬', tags: ['canal'] }
     const { html, text } = cardsToClipboard([a, b])
-    expect(cardsFromHtml(html)).toEqual([a, { ...b, color: undefined }])
-    expect(cardFromHtml(html)).toEqual(a)
+    expect(cardsFromHtml(html)).toMatchObject([a, { ...b, color: undefined }])
+    expect(cardFromHtml(html)).toMatchObject(a)
     expect(text).toBe('# Feira\n\n- Banca\n\n# Vídeos')
     expect(cardsFromHtml('<p>nada</p>')).toEqual([])
   })
