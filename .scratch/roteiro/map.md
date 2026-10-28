@@ -20,7 +20,7 @@ porque ele é o hub: a pendência de um app que for peça comum vira tarefa do A
 
 | Nº | Tarefa | Repos | Status |
 |---|---|---|---|
-| 01 | Atualizar o `UNIFICACAO.md` (fase 3 feita, o que sobrou) | atrio | ready-for-agent |
+| 01 | Atualizar o `UNIFICACAO.md` (fase 3 feita, o que sobrou) | atrio | feita |
 | 02 | Card aberto: `CardSession` (salvar, `settle`, trava de atalhos) | atrio, nodo, ideario | needs-triage |
 | 03 | Área de transferência v2 (lembrete, status, anexos) | atrio, ambos | needs-triage |
 | 04 | Unificação fase 4: casca da interface | atrio, ambos | needs-triage |
@@ -32,9 +32,13 @@ porque ele é o hub: a pendência de um app que for peça comum vira tarefa do A
 | 10 | Nodo: estruturas e formatos do XMind que faltam | nodo | needs-triage |
 | 11 | Ideario: sync com conta Google real, cache LRU, só no Wi-Fi | ideario | needs-info |
 | 12 | Ideario: Android (backup, importar Keep, widget) | ideario | needs-triage |
-| 13 | Limpar o "Próximo" do `CLAUDE.md` do Nodo (itens já feitos) | nodo | ready-for-agent |
+| 13 | Limpar o "Próximo" do `CLAUDE.md` do Nodo (itens já feitos) | nodo | feita |
 
 ## Decisões até aqui
+
+- 28/10: ordem do usuário: 01 e 13, depois 02.
+- [01](issues/01-unificacao-atualizada.md): `UNIFICACAO.md` com o estado de cada defeito (abertos: 6 a 11 e duas lacunas do 12).
+- [13](issues/13-nodo-proximo.md): "Próximo" do Nodo só com o que falta.
 
 ## Ainda sem forma
 

@@ -8,26 +8,23 @@ o mesmo. O fluxo de cada mudança está na skill `atrio-hub`.
 
 ## Onde estamos
 
-O Atrio já tem: `atrio.css`, `CardBody`, `CardPills`, `CardDialog`, `NoteEditor` (o card aberto), temas, menus, o
-`Picker`, seletores, a área de transferência e a crate (`markdown`, `canon`, `text`).
+Atualizado em 28/10/2026. Os dois apps estão no Atrio **0.22.0** (o mesmo `v0.22.0` no `package.json` e no Cargo).
+As fases 1 a 3 estão feitas: o núcleo dos dois usa a crate (`markdown`, `canon`, `text`, `attach`, `media`, `card`,
+`projection`), e o card é um só (`NoteCard`, `CardBody`, `CardPills`, `CardDialog`, `CardTopBar`, `NoteEditor`,
+`AttachmentViewer`), também em inglês e português (`i18n`). Faltam a casca da interface, o MCP, o build e a limpeza
+(fases 4 a 7), mais dois pedaços que eram da fase 3 (`CardSession` e `CARD_FORMAT` 2).
 
-Os dois apps estão no Atrio **0.11.0** desde hoje. Antes, o Ideario estava no 0.9.0 sem saber.
-
-Em volta dessas peças, cada app ainda faz a sua versão:
-- a moldura do card, a cor, a capa, a barra do card aberto, os menus;
-- a regra que monta a prévia;
-- as regras de status e anexos no Rust;
-- tema do sistema, atualizador, Configurações, MCP;
-- workflows de release e site.
-
-O núcleo do Ideario nem usa a crate `atrio`: tem cópias idênticas de `markdown`, `canon`, `testdoc` e das regras de
-texto.
+As pendências, com estado, ficam em `.scratch/roteiro/` (uma tarefa por arquivo).
 
 ## Defeitos que a duplicação já causou (corrigir junto com a unificação)
 
-1. **Status com lembrete que repete.** No Ideario e no card do Atrio, "feito" leva o lembrete à próxima data. No
+Estado em 28/10/2026, conferido no código: **corrigidos** 1 a 5 (fase 2) e, das lacunas do 12, o `.nodo` no Finder,
+a licença do Ideario e a página de privacidade. **Abertos** 6, 7, 8, 9, 10, 11 e, do 12, o atualizador do Nodo e a
+checagem de versão do Ideario.
+
+1. ✅ **Status com lembrete que repete.** No Ideario e no card do Atrio, "feito" leva o lembrete à próxima data. No
    núcleo do Nodo só marca feito, e o MCP do Nodo faz diferente da tela do Nodo (`nodo-core/src/model.rs`).
-2. **Prévia do card.** São três implementações: `projection.rs` no Ideario, `markdown.ts` no Atrio e o `notedoc.ts`
+2. ✅ **Prévia do card.** São três implementações: `projection.rs` no Ideario, `markdown.ts` no Atrio e o `notedoc.ts`
    da prévia do Nodo. Elas discordam em:
    - card de link: título + site, ou só texto;
    - tipo do arquivo;
@@ -38,24 +35,25 @@ texto.
    - `&nbsp;` e `\|` aparecendo como texto;
    - `<br>` em título;
    - foto dentro de item de lista.
-3. **Anexos.** O mesmo arquivo recebe hash diferente em cada app: 64 hex no Ideario, 32 no Nodo. As tabelas de tipo e
+3. ✅ **Anexos.** O mesmo arquivo recebe hash diferente em cada app: 64 hex no Ideario, 32 no Nodo. As tabelas de tipo e
    de MIME também divergem: `.mkv`, `.flac` e `.aac` viram "outro" no Nodo.
-4. **#etiquetas no texto** viram pílula no Ideario e não no Nodo.
-5. **Busca sem acento:** "acao" acha "Ação" no Ideario, não no Nodo.
-6. **Tema "Sistema"** no Nodo não lê a cor de destaque nem o esquema do KDE: o global existe, mas ninguém o preenche.
+4. ✅ **#etiquetas no texto** viram pílula no Ideario e não no Nodo.
+5. ✅ **Busca sem acento:** "acao" acha "Ação" no Ideario, não no Nodo.
+6. **Tema "Sistema"** no Nodo não lê a cor de destaque nem o esquema do KDE: o `systemAccent` existe, mas ninguém o preenche.
    Também não tem a fonte do sistema.
 7. **Avisos do card** (erro de microfone ou câmera) não aparecem no Nodo: falta ligar o `setNotifier`.
-8. **Atalhos do mapa** (⌘S/⌘W/Ctrl+Tab…) continuam valendo atrás do card aberto no Nodo. O Ideario desliga.
-9. **Fechar o card** durante uma gravação perde o áudio no Nodo, que não espera o `settle()`.
+8. **Atalhos do mapa** (⌘S/⌘W/Ctrl+Tab…) continuam valendo atrás do card aberto no Nodo (`onKeydown` do
+   `App.svelte` não olha `notes.opened`). O Ideario desliga.
+9. **Fechar o card** durante uma gravação perde o áudio no Nodo: o `NodeNote.svelte` não chama o `settle()`.
 10. **Dicas de atalho** no Ideario dizem `Ctrl+` também no macOS.
 11. **Copiar e colar card** entre os apps perde lembrete, status e anexos: o `ClipCard` só leva título, texto, cor,
-    emoji e etiquetas.
+    emoji e etiquetas (`CARD_FORMAT` ainda é 1).
 12. **Lacunas de cada app** (não são duplicação, mas apareceram na varredura):
-    - Nodo: o `.nodo` não abre com duplo clique no macOS (falta `RunEvent::Opened`);
-    - Nodo: o atualizador pode reiniciar com mapa não salvo;
-    - Ideario: sem arquivo de licença;
+    - ✅ Nodo: o `.nodo` não abria com duplo clique no macOS (`RunEvent::Opened`, Nodo 0.6.1);
+    - Nodo: o atualizador pode reiniciar com mapa não salvo (`update_install` chama `app.restart()` sem perguntar);
+    - ✅ Ideario: sem arquivo de licença (GPL-3.0-or-later desde 22/10);
     - Ideario: sem checagem de versão no CI;
-    - Nodo: a página de privacidade ainda fala em `.minder`.
+    - ✅ Nodo: a página de privacidade falava em `.minder`.
 
 ## O que vem para o Atrio, por camada
 
@@ -186,8 +184,17 @@ Falta:
     - `#tags` e contagem de anexos nas pílulas;
     - busca sem acento.
   - Corrige os defeitos 1 a 5.
-  - Ficou para a fase 3: `hashTags` do TypeScript não tira repetidas (o Rust tira); os backends simulados do
-    navegador (`lib/api/mock` do Ideario e `lib/preview.ts` do Nodo) ainda montam a prévia em TypeScript.
+  - Ficou para a fase 3: `hashTags` do TypeScript não tirava repetidas (corrigido na 0.14.0); os backends simulados do
+    navegador (`lib/api/mock` do Ideario e `lib/preview.ts` do Nodo) ainda montam a prévia em TypeScript (tarefa 08
+    do roteiro).
+- **Fase 3 — feita (Atrio 0.14.0 a 0.17.1):** `NoteCard` (0.14.0), `nearestNoteColor` (0.15.0), `CardTopBar`
+  (0.16.0), `AttachmentViewer` em `@wylho/atrio/viewer` (0.17.0/0.17.1), exportar o card pelo DOM no Nodo
+  (`lib/domcard.ts`), notas soltas como o card padrão. Ficaram para depois: `CardSession` (defeitos 8 e 9), o
+  Ideario no `CardDialog` (o `Editor.svelte` ainda monta o próprio `Dialog` do bits-ui) e o `CARD_FORMAT` 2
+  (defeito 11), tarefas 02 e 03 do roteiro.
+- **Depois da fase 3:** idiomas (0.18.0/0.18.1), licença GPL (0.18.2), vários cards na área de transferência
+  (0.19.0), tabela na prévia (0.20.0/0.21.0), PDF da nota com o card no topo (0.22.0).
+- **Próxima:** fase 4 (casca), depois de `CardSession` e `CARD_FORMAT` 2.
 
 ## Ordem proposta
 
