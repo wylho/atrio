@@ -1,6 +1,6 @@
 # Área de transferência v2
 
-Status: ready-for-agent
+Status: resolved
 Repos: atrio, ideario, nodo
 
 ## Pergunta
@@ -27,3 +27,7 @@ aviso com o que ficou de fora.
   arquivos são buscados depois.
 - Ideario (`note_card`/`create_from_card` e o mock) e Nodo (`cardOf`, `pasteCard(s)`, `add_topic`/`apply_edits`)
   levam e recebem lembrete, status e anexos.
+
+## Answer
+
+Feito em 28/10/2026 no Atrio 0.24.0; os dois apps na tag, com lembrete, status e os arquivos indo e voltando.

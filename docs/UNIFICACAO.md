@@ -19,7 +19,7 @@ As pendências, com estado, ficam em `.scratch/roteiro/` (uma tarefa por arquivo
 ## Defeitos que a duplicação já causou (corrigir junto com a unificação)
 
 Estado em 28/10/2026, conferido no código: **corrigidos** 1 a 5 (fase 2) e, das lacunas do 12, o `.nodo` no Finder,
-a licença do Ideario e a página de privacidade. **Abertos** 6, 7, 10, 11 (8 e 9 corrigidos na 0.23.0) e, do 12, o atualizador do Nodo e a
+a licença do Ideario e a página de privacidade. **Abertos** 6, 7, 10 (8 e 9 corrigidos na 0.23.0, 11 na 0.24.0) e, do 12, o atualizador do Nodo e a
 checagem de versão do Ideario.
 
 1. ✅ **Status com lembrete que repete.** No Ideario e no card do Atrio, "feito" leva o lembrete à próxima data. No
