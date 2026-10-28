@@ -28,6 +28,7 @@ export {
 
 // Peças de interface do card
 export { default as CardDialog } from './card/CardDialog.svelte'
+export { CardSession, cardOpen, trackCardOpen, type CardSessionOptions } from './card/session.svelte'
 export { default as CardTopBar } from './card/CardTopBar.svelte'
 export { default as CardPills } from './card/CardPills.svelte'
 export { default as NoteCard } from './card/NoteCard.svelte'

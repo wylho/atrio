@@ -152,6 +152,11 @@ Single-context: `GLOSSARY.md` na raiz (quando houver); as decisões são as do `
   título e o emoji da tela somem no papel. O papel é sempre claro (os tokens voltam aos claros em
   `html:has(body.print-note)`; com o app no escuro a margem da página saía preta). Texto, subtítulos, checklist e
   tabela com medidas de papel. Testes em `tests/card.test.ts` (e o `NoteEditorHarness` aceita `init`).
+- **0.23.0**: **sessão do card aberto** (`src/card/session.svelte.ts`, tarefa 02 do roteiro; defeitos 8 e 9 do
+  `UNIFICACAO.md`): `CardSession` fecha na ordem certa (espera a gravação e os arquivos com o `settle`, salva, só então
+  some; fechar duas vezes fecha uma; se não salvou, continua aberto) e `cardOpen()` vale enquanto há um `CardDialog`
+  na tela (`trackCardOpen` no `onMount`), para os atalhos e o copiar/colar do app pararem atrás do card. Testes em
+  `tests/session.test.ts`.
 - Em uso: o Ideario (card inteiro, `NoteEditor`) e o Nodo (o nó é o card: `CardBody` + `CardPills` no mapa,
   `CardDialog` + `NoteEditor` ao abrir, com `features({ category: false, links: false })`: fotos, arquivos, câmera e
   gravador entram no `.nodo`, um zip com os anexos).

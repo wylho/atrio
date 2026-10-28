@@ -1,6 +1,6 @@
 # Card aberto: CardSession
 
-Status: needs-triage
+Status: ready-for-agent
 Repos: atrio, nodo, ideario
 
 ## Pergunta

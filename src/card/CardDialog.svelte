@@ -2,9 +2,10 @@
   // A janela do card aberto, a mesma em todos os apps: no celular ocupa a tela, na janela larga é um diálogo um pouco
   // maior que o card, e o modo documento (`doc`) leva a página inteira, com coluna de leitura. O conteúdo é o
   // `NoteEditor` do app (com a barra do topo dele).
-  import type { Snippet } from 'svelte'
+  import { onMount, type Snippet } from 'svelte'
   import { Dialog } from 'bits-ui'
   import type { NoteColor } from './types'
+  import { trackCardOpen } from './session.svelte'
 
   let {
     color = 'none',
@@ -18,6 +19,9 @@
     onclose: () => void
     children: Snippet
   } = $props()
+
+  // Enquanto o card está na tela, `cardOpen()` vale: os atalhos do app param atrás dele.
+  onMount(() => trackCardOpen())
 </script>
 
 <Dialog.Root open onOpenChange={(o) => !o && onclose()}>
