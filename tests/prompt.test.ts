@@ -77,3 +77,25 @@ describe('prompt e link no card fechado', () => {
     unmount(app)
   })
 })
+
+describe('partsOf (o documento do editor, como projection.rs)', () => {
+  it('dá os mesmos pedaços que o Rust', async () => {
+    const { partsOf } = await import('../src/index')
+    const p = {
+      type: 'paragraph',
+      content: [
+        { type: 'text', text: 'Revisar  o orçamento ' },
+        { type: 'text', text: 'resuma em 3 tópicos', marks: [{ type: 'prompt' }] },
+        { type: 'text', text: ' e ver a ' },
+        { type: 'text', text: 'Apresentação', marks: [{ type: 'link', attrs: { href: 'https://exemplo.com/p', target: null } }] },
+      ],
+    }
+    expect(partsOf(p)).toEqual([
+      { text: 'Revisar o orçamento ' },
+      { text: 'resuma em 3 tópicos', prompt: true },
+      { text: ' e ver a ' },
+      { text: 'Apresentação', href: 'https://exemplo.com/p' },
+    ])
+    expect(partsOf({ type: 'paragraph', content: [{ type: 'text', text: 'só texto' }] })).toEqual([])
+  })
+})

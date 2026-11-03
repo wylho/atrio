@@ -967,6 +967,12 @@ button { cursor: pointer; }
 .update-alerts { left: 16px; right: auto; bottom: 32px; }
 @media (max-width: 639px) { .update-alerts { top: 72px; bottom: auto; left: 16px; } }
 
+/* o card numa janela só dele: ocupa a janela, sem moldura nem o escuro atrás */
+.editor[data-window] {
+  inset: 0 !important; margin: 0 !important; width: 100% !important; height: 100% !important; max-width: none;
+  border-radius: 0 !important; border: 0 !important; box-shadow: none !important; animation: none;
+}
+
 /* modo documento: a nota em página inteira, coluna de leitura no meio e letra maior */
 .editor[data-doc] {
   inset: 0 !important; margin: 0 !important; width: 100% !important; height: 100% !important; max-width: none;

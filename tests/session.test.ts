@@ -67,3 +67,26 @@ describe('cardOpen', () => {
     target.remove()
   })
 })
+
+describe('card numa janela só dele', () => {
+  it('a barra do card oferece "Abrir em nova janela" só quando o app sabe abrir', async () => {
+    const { CardTopBar, emptyMeta } = await import('../src/index')
+    const target = document.createElement('div')
+    document.body.append(target)
+    let opened = 0
+    const meta = emptyMeta()
+    const card = { status() {}, chooseEmoji() {}, reminder() {} }
+    const a = mount(CardTopBar, { target, props: { meta, card: card as never, onback() {}, onwindow: () => void opened++ } })
+    flushSync()
+    ;(target.querySelector('[aria-label="Mais opções"]') as HTMLElement | null)?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    flushSync()
+    await new Promise((r) => setTimeout(r, 0))
+    const item = [...document.querySelectorAll('[role="menuitem"]')].find((e) => e.textContent?.includes('Abrir em nova janela')) as HTMLElement | undefined
+    expect(item).toBeDefined()
+    item!.click()
+    flushSync()
+    expect(opened).toBe(1)
+    unmount(a)
+    target.remove()
+  })
+})

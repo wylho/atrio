@@ -6,7 +6,7 @@
   // Vai no snippet `top` do `NoteEditor`; `card` é o próprio `NoteEditor` (lembrete, status, emoji passam por ele).
   import type { Snippet } from 'svelte'
   import { DropdownMenu } from 'bits-ui'
-  import { ArrowLeft, BookOpen, Check, ChevronRight, CircleDashed, Minimize2, MoreVertical, Pin, PinOff, SmilePlus } from '@lucide/svelte'
+  import { AppWindow, ArrowLeft, BookOpen, Check, ChevronRight, CircleDashed, Minimize2, MoreVertical, Pin, PinOff, SmilePlus } from '@lucide/svelte'
   import ReminderPopover from '../ui/ReminderPopover.svelte'
   import { t } from '../i18n.svelte'
   import { hasStatus, STATUS, statusOf, type CardMeta } from './meta'
@@ -30,6 +30,7 @@
     ondoc,
     pinned = false,
     onpin,
+    onwindow,
     menuStart,
     menuEnd,
     menu,
@@ -47,6 +48,8 @@
     pinned?: boolean
     /** Fixar ou desafixar; sem ela, não há o botão. */
     onpin?: () => void
+    /** Abrir este card numa janela só dele; sem ela (ou já numa janela à parte), não há o item. */
+    onwindow?: () => void
     menuStart?: Snippet
     menuEnd?: Snippet
     menu?: Snippet
@@ -100,6 +103,7 @@
             </DropdownMenu.SubContent>
           </DropdownMenu.Sub>
           <DropdownMenu.Item class="menu-item" onSelect={() => card?.chooseEmoji()}><SmilePlus size={16} />{meta.emoji ? t('Mudar emoji de capa') : t('Emoji de capa')}</DropdownMenu.Item>
+          {#if onwindow}<DropdownMenu.Item class="menu-item" onSelect={onwindow}><AppWindow size={16} />{t('Abrir em nova janela')}</DropdownMenu.Item>{/if}
           {@render menuEnd?.()}
         {/if}
       </DropdownMenu.Content>

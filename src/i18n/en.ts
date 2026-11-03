@@ -165,6 +165,7 @@ export const EN: Record<string, string> = {
   'Pôr link': 'Add link',
   Links: 'Links',
   'Adicionar link': 'Add link',
+  'Abrir em nova janela': 'Open in new window',
   'Título grande': 'Large heading',
   'Título médio': 'Medium heading',
   'Título pequeno': 'Small heading',

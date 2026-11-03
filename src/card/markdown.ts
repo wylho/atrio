@@ -83,6 +83,29 @@ export function inlineParts(lines: string[]): PreviewPart[] {
     }
     pieces(line, false)
   })
+  return cleanParts(raw)
+}
+
+/** Um nó do documento do editor (o JSON do TipTap), o bastante para a prévia. */
+type DocNode = { type?: string; text?: string; marks?: { type: string; attrs?: Record<string, unknown> }[]; content?: DocNode[] }
+
+/** Os pedaços de um parágrafo, título ou item do documento do editor, como `parts_of` em projection.rs (para quem
+ *  monta a prévia do documento em TypeScript, como o backend simulado do Ideario). Sem prompt nem link, nenhum. */
+export function partsOf(node: DocNode): PreviewPart[] {
+  const raw: PreviewPart[] = []
+  const walk = (n: DocNode) => {
+    if (n.type === 'text') {
+      const prompt = !!n.marks?.some((m) => m.type === 'prompt')
+      const href = n.marks?.find((m) => m.type === 'link')?.attrs?.href
+      raw.push({ text: n.text ?? '', ...(prompt ? { prompt } : {}), ...(typeof href === 'string' && href ? { href } : {}) })
+    } else if (n.type === 'hardBreak') raw.push({ text: '\n' })
+    else n.content?.forEach(walk)
+  }
+  walk(node)
+  return cleanParts(raw)
+}
+
+function cleanParts(raw: PreviewPart[]): PreviewPart[] {
   if (!raw.some((p) => p.prompt || p.href)) return []
   // A regra do `clean` letra por letra, como no Rust: o espaço entre dois pedaços fica no pedaço onde estava.
   const chars: [string, number][] = []

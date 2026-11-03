@@ -10,12 +10,15 @@
   let {
     color = 'none',
     doc = false,
+    window: own = false,
     onclose,
     children,
   }: {
     color?: NoteColor
     /** Modo documento (página inteira). O app decide quando vale (o Ideario: só na janela larga). */
     doc?: boolean
+    /** O card numa janela só dele ("Abrir em nova janela"): ocupa a janela inteira, sem o escuro atrás. */
+    window?: boolean
     onclose: () => void
     children: Snippet
   } = $props()
@@ -26,10 +29,11 @@
 
 <Dialog.Root open onOpenChange={(o) => !o && onclose()}>
   <Dialog.Portal>
-    <Dialog.Overlay class="overlay ed-overlay" />
+    {#if !own}<Dialog.Overlay class="overlay ed-overlay" />{/if}
     <Dialog.Content
       class="editor c-{color}"
       data-doc={doc ? '' : undefined}
+      data-window={own ? '' : undefined}
       aria-describedby={undefined}
       onOpenAutoFocus={(e) => e.preventDefault()}
     >
