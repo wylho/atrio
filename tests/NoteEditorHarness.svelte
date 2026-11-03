@@ -3,7 +3,7 @@
   import { NoteEditor } from '../src/editor'
   import { emptyMeta, type CardFeatures, type CardMeta } from '../src/index'
 
-  let { features, content, onbody, init = {} }: { features: CardFeatures; content: unknown; onbody?: (text: string) => void; init?: Partial<CardMeta> } = $props()
+  let { features, content, onbody, init = {}, askText }: { features: CardFeatures; content: unknown; onbody?: (text: string) => void; init?: Partial<CardMeta>; askText?: (o: { title: string; label: string; confirm: string; value?: string }) => Promise<string | null> } = $props()
   // svelte-ignore state_referenced_locally
   const meta = $state(emptyMeta({ title: 'Plano', ...init }))
   let card: NoteEditor | undefined = $state()
@@ -36,6 +36,7 @@
   {features}
   {content}
   host={{
+    askText,
     tags: () => [{ name: 'casa', count: 2 }],
     categories: () => [{ id: 'c1', name: 'Trabalho', color: '#36c' }],
     importFile: async (_blob, name) => ({

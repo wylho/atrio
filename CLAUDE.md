@@ -179,6 +179,9 @@ Single-context: `GLOSSARY.md` na raiz (quando houver); as decisões são as do `
   janela" no menu ⋮; `CardDialog` com `window` ocupa a janela inteira, sem o escuro atrás (`.editor[data-window]`).
   Cada app abre a janela dele (Tauri). E `partsOf(nó)`: os pedaços de prompt e link de um parágrafo do documento,
   a mesma regra do `parts_of` do Rust, para quem monta a prévia em TypeScript (o backend simulado do Ideario).
+- **0.26.1**: o link do ⌘K ia para um pedaço errado da palavra ("ção" de "apresentação"): enquanto o app pede o
+  endereço, o foco sai do editor e a seleção muda, e o editor lê a seleção do navegador com atraso. `inlineLink` lê a
+  seleção na hora (`domObserver.flush()`), guarda e aplica o link nela. Teste em `tests/prompt.test.ts`.
 - Em uso: o Ideario (card inteiro, `NoteEditor`) e o Nodo (o nó é o card: `CardBody` + `CardPills` no mapa,
   `CardDialog` + `NoteEditor` ao abrir, com `features({ category: false, links: false })`: fotos, arquivos, câmera e
   gravador entram no `.nodo`, um zip com os anexos).

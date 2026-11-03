@@ -47,6 +47,39 @@ describe('prompt e link na palavra no card aberto', () => {
   })
 })
 
+describe('link na palavra pelo ⌘K', () => {
+  it('o link vai para a palavra escolhida, mesmo que a seleção mude enquanto o endereço é pedido', async () => {
+    const target = document.createElement('div')
+    document.body.append(target)
+    let app: Ed
+    app = mount(Harness, {
+      target,
+      props: {
+        features: features(),
+        content: '<p>mandar a apresentação</p>',
+        // O diálogo do app tira o foco do editor: no WebKit e no Chromium a seleção do editor muda nesse meio-tempo.
+        askText: async () => {
+          app.editor()!.commands.setTextSelection(20)
+          return 'exemplo.com/apresentacao'
+        },
+      },
+    }) as unknown as Ed
+    flushSync()
+    await new Promise((r) => setTimeout(r, 0))
+    const ed = app.editor()!
+    ed.commands.setTextSelection({ from: 10, to: 22 })
+    expect(ed.state.doc.textBetween(10, 22)).toBe('apresentação')
+    ;(target.querySelector('button[aria-label="Link na palavra"]') as HTMLButtonElement).click()
+    await new Promise((r) => setTimeout(r, 0))
+    flushSync()
+    const nodes = app.json().content[0].content
+    expect(nodes.map((n: { text: string }) => n.text)).toEqual(['mandar a ', 'apresentação'])
+    expect(nodes[1].marks[0].attrs.href).toBe('https://exemplo.com/apresentacao')
+    unmount(app as never)
+    target.remove()
+  })
+})
+
 describe('prompt e link no card fechado', () => {
   it('a prévia em Markdown divide o texto em pedaços, como o Rust', () => {
     const [b] = blocksFromMarkdown('Revisar  o orçamento <prompt>resuma em 3 tópicos</prompt> e ver a [Apresentação](https://exemplo.com/p)')

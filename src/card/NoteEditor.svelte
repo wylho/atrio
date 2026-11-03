@@ -208,8 +208,13 @@
   /** Põe (ou troca, ou tira) o link da palavra escolhida. Com o cursor num link, edita aquele; vazio tira. */
   async function inlineLink() {
     if (!editor) return
+    // O editor lê a seleção do navegador com um pequeno atraso: com Shift+← seguido de ⌘K, a última letra escolhida
+    // ainda não tinha entrado. Lê agora.
+    ;(editor.view as unknown as { domObserver?: { flush(): void } }).domObserver?.flush()
     const current = editor.getAttributes('link').href as string | undefined
-    if (editor.state.selection.empty && !current) {
+    // A seleção de agora: enquanto o app pede o endereço, o foco sai do editor e a seleção dele pode mudar.
+    const { from, to } = editor.state.selection
+    if (from === to && !current) {
       say(t('Escolha a palavra que vai ter o link'))
       return
     }
@@ -217,7 +222,7 @@
       ? await host.askText({ title: current ? t('Editar link') : t('Link na palavra'), label: t('Endereço (https://…) — vazio tira o link'), confirm: t('Pôr link'), value: current })
       : window.prompt(t('Endereço (https://…)'), current ?? '')
     if (text == null) return
-    const chain = editor.chain().focus().extendMarkRange('link')
+    const chain = editor.chain().focus().setTextSelection({ from, to }).extendMarkRange('link')
     if (!text.trim()) return void chain.unsetLink().run()
     const url = bareUrl(text) ?? bareUrl(`https://${text}`)
     if (!url) return say(t('Isso não parece um endereço'))
