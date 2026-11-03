@@ -78,7 +78,8 @@ export interface CardHost {
   /** Cria uma categoria (o app pergunta o nome) e devolve o id pela função. */
   newCategory?: (done: (id: string) => void) => void
   /** Pergunta um texto (o endereço de um link). Sem isto, usa o `prompt` do navegador. */
-  askText?: (o: { title: string; label: string; confirm: string }) => Promise<string | null>
+  /** `value`: o texto que já vem no campo (editar um link). */
+  askText?: (o: { title: string; label: string; confirm: string; value?: string }) => Promise<string | null>
   /** Um lembrete acabou de ser marcado. */
   onReminderSet?: () => void
   /** Anexos acabaram de entrar no texto (o Ideario gera a prévia de PDFs e vídeos). */

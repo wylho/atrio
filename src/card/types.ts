@@ -51,11 +51,15 @@ export type AttachmentKind = 'image' | 'pdf' | 'doc' | 'sheet' | 'audio' | 'vide
  * Bloco da prévia do card, na ordem do documento. Preserva a estrutura (título, parágrafo,
  * tópico, lista numerada, tarefa) em vez de achatar tudo num texto corrido.
  */
+/** Pedaço de um texto da prévia com prompt (instrução para a IA) ou link na palavra; o resto vai em pedaços sem nada. */
+export type PreviewPart = { text: string; prompt?: boolean; href?: string }
+
+/** `parts`: os pedaços do texto quando ele tem prompt ou link na palavra (sem isso, não vem). Juntos, dão o `text`. */
 export type PreviewBlock =
-  | { kind: 'heading' | 'text'; text: string }
-  | { kind: 'bullet'; text: string; depth: number }
-  | { kind: 'ordered'; text: string; n: number; depth: number }
-  | { kind: 'task'; text: string; done: boolean; depth: number }
+  | { kind: 'heading' | 'text'; text: string; parts?: PreviewPart[] }
+  | { kind: 'bullet'; text: string; depth: number; parts?: PreviewPart[] }
+  | { kind: 'ordered'; text: string; n: number; depth: number; parts?: PreviewPart[] }
+  | { kind: 'task'; text: string; done: boolean; depth: number; parts?: PreviewPart[] }
   /** Anexo no meio do texto (vídeo, áudio, PDF…): mostrado como uma linha com ícone. */
   | { kind: 'file'; text: string; fileKind: AttachmentKind; hash: string }
   /** Bloco de código: as primeiras linhas, sem formatação. */

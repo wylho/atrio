@@ -7,7 +7,7 @@ export type RepeatKind = 'day' | 'week' | 'month' | 'year'
 /** Status: a fazer (vermelho), em andamento (amarelo), concluído (verde). */
 export type ReminderStatus = 'todo' | 'doing' | 'done'
 export type Tone = 'quente' | 'frio' | 'verde' | 'rosa' | 'neutro'
-export type { AttachmentKind, NoteColor, PreviewBlock } from './card/types'
+export type { AttachmentKind, NoteColor, PreviewBlock, PreviewPart } from './card/types'
 import type { AttachmentKind } from './card/types'
 
 /** Anexo de uma nota, endereçado pelo hash do conteúdo. */

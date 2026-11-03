@@ -12,6 +12,10 @@
     card?.addFiles(files)
   }
 
+  export function editor() {
+    return card?.getEditor()
+  }
+
   export function json() {
     return card?.getEditor()?.getJSON()
   }

@@ -13,6 +13,7 @@ import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import type { Node as PMNode } from '@tiptap/pm/model'
 import { ImageRow, MediaLayout, NoteFile, NoteImage, type MediaInfo } from './media'
 import { LinkCard, type LinkOptions } from './link'
+import { Prompt } from './prompt'
 import { t } from '../i18n.svelte'
 
 /** Marcar (ou desmarcar) um item de checklist faz o mesmo com os subitens dele, como no Google Keep. Só para o que
@@ -181,7 +182,15 @@ export function noteExtensions(opts: {
       // Markdown: # ## ### (o título da nota fica à parte), > citação, `código`, ~~tachado~~, --- linha.
       heading: { levels: [1, 2, 3] },
       underline: false,
-      link: false,
+      // Link na palavra: só o endereço fica guardado (nada de `target`/`rel`, que o Markdown não leva); colar um
+      // endereço com um texto escolhido põe o link nele. Abrir é ⌘/Ctrl+clique (o clique comum só põe o cursor).
+      link: {
+        openOnClick: false,
+        autolink: false,
+        linkOnPaste: true,
+        defaultProtocol: 'https',
+        HTMLAttributes: { target: null, rel: null, class: null },
+      },
       // Sem nó final automático: abrir uma nota não pode alterá-la.
       trailingNode: false,
     }),
@@ -197,6 +206,7 @@ export function noteExtensions(opts: {
     ImageRow,
     NoteFile.configure({ render: opts.renderFile }),
     LinkCard.configure(opts.link ?? {}),
+    Prompt,
     MediaLayout.configure({ onFiles: opts.onFiles, onMenu: opts.onMenu, clipboardImage: opts.clipboardImage }),
     MarkdownPaste.configure({ convert: opts.markdown }),
     Hashtags,

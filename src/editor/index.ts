@@ -4,6 +4,7 @@
 export * from './blocks'
 export * from './extensions'
 export * from './link'
+export * from './prompt'
 export * from './media'
 export * from './capture.svelte'
 

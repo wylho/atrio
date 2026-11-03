@@ -164,6 +164,17 @@ Single-context: `GLOSSARY.md` na raiz (quando houver); as decisões são as do `
   citados no Markdown e devolve o que ficou de fora; `importCardFiles(card, importFile)` entrega os arquivos ao app ao
   colar e troca no Markdown o hash antigo pelo novo. `writeCard(s)` aceita a promessa dos cards (o `ClipboardItem`
   recebe promessas: a cópia começa no gesto). A v1 continua sendo lida. Testes em `tests/clipboard.test.ts`.
+- **0.25.0**: **prompt e link na palavra** (pedido do usuário, `.scratch/prompt-links-janela/`). **Prompt**: marca
+  `prompt` do TipTap (`src/editor/prompt.ts`, botão ✦ na barra e ⌘⇧P), um trecho do texto que é instrução para a IA;
+  na tela entre colchetes com fundo suave (`.ed-prompt`, os colchetes são do CSS; escolha do usuário), no Markdown
+  `<prompt>…</prompt>` (`atrio::markdown`). **Link na palavra**: a marca `link` do StarterKit ligada, só com `href`
+  (`target`/`rel`/`class`/`title` vazios, que o `canon` descarta), botão e ⌘K (`inlineLink`; o `askText` do app
+  recebe `value`), ⌘/Ctrl+clique abre; Markdown `[palavra](endereço)` de ida e volta (antes virava "palavra
+  (endereço)"). **Lista "Links"** no fim do card aberto (escolha do usuário: automática): os links das palavras, um
+  por endereço, e "Adicionar link" põe um cartão no fim. **Card fechado**: blocos de texto, lista e tarefa ganham
+  `parts` (`Part`/`PreviewPart`: texto, `prompt`, `href`) só quando há prompt ou link; `CardBody` desenha
+  `.pv-prompt` e `.pv-ilink`. Rust: `projection::parts_of` (a regra do `clean` letra por letra), propriedade "os
+  pedaços juntos são o texto"; TS: `inlineParts` em `markdown.ts`. Testes em `tests/prompt.test.ts`.
 - Em uso: o Ideario (card inteiro, `NoteEditor`) e o Nodo (o nó é o card: `CardBody` + `CardPills` no mapa,
   `CardDialog` + `NoteEditor` ao abrir, com `features({ category: false, links: false })`: fotos, arquivos, câmera e
   gravador entram no `.nodo`, um zip com os anexos).

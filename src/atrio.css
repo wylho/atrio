@@ -599,6 +599,29 @@ button { cursor: pointer; }
 }
 .prose pre code { font: inherit; }
 .prose .hashtag { color: var(--accent); font-weight: 500; }
+/* Prompt: instrução para a IA no meio do texto. Entre colchetes (do desenho, não do texto) e fundo suave na cor de
+   destaque; o mesmo no card fechado (.pv-prompt). Link na palavra: sublinhado na cor de destaque. */
+.prose .ed-prompt, .pv-prompt {
+  background: var(--accent-soft); color: var(--accent); border-radius: 5px; padding: 0 2px;
+  box-decoration-break: clone; -webkit-box-decoration-break: clone;
+}
+.prose .ed-prompt::before, .pv-prompt::before { content: '['; opacity: .6; }
+.prose .ed-prompt::after, .pv-prompt::after { content: ']'; opacity: .6; }
+.prose a[href], .pv-ilink { color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.prose a[href] { cursor: text; }
+/* Lista de links no fim do card aberto: os links das palavras, um por endereço. */
+.ed-links { display: grid; gap: 2px; margin: 4px 0 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+.ed-links-h { margin: 0 0 4px; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.ed-link-row {
+  display: flex; align-items: center; gap: 8px; min-width: 0; padding: 6px 8px; border: 0; border-radius: 8px;
+  background: none; color: var(--fg); font: inherit; text-align: left; cursor: pointer;
+}
+.ed-link-row:hover { background: var(--raised); }
+.ed-link-row svg { flex: none; color: var(--muted); }
+.ed-link-row.add { color: var(--muted); }
+.ed-link-t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ed-link-s { flex: none; margin-left: auto; font-size: 12px; color: var(--muted); }
+@media print { .ed-links { break-inside: avoid; } .ed-link-row.add { display: none; } }
 /* checklist (TaskList do TipTap) */
 .prose ul[data-type="taskList"] { list-style: none; padding: 0; }
 .prose ul[data-type="taskList"] li { display: flex; align-items: flex-start; gap: 10px; min-height: 30px; }

@@ -1,9 +1,9 @@
 // Prévia do card a partir de Markdown, para quem guarda a nota como texto (o Nodo). O Ideario projeta do documento
 // do editor no Rust (`projection.rs`); as regras aqui são as mesmas, para o card sair igual nos dois:
-// texto sem formatação (negrito, itálico e links viram texto), linhas seguidas formam um parágrafo, listas e tarefas
+// texto sem formatação (negrito e itálico viram texto; prompt e link na palavra vão também em `parts`), linhas seguidas formam um parágrafo, listas e tarefas
 // com profundidade, código com até 8 linhas, e os limites de `preview_of`.
 
-import type { AttachmentKind, PreviewBlock } from './types'
+import type { AttachmentKind, PreviewBlock, PreviewPart } from './types'
 
 /** Endereço dos anexos no Markdown das notas (o mesmo de `atrio::markdown::ATT`). */
 const ATT = 'ideario://att/'
@@ -41,9 +41,15 @@ const MAX_CODE_LINES = 8
 /** Linhas de uma tabela na prévia, como `MAX_TABLE_ROWS` em projection.rs. */
 const MAX_TABLE_ROWS = 8
 
-/** Tira a marcação de linha: a prévia do Ideario também mostra só o texto. */
+/** Tira a marcação de linha: a prévia do Ideario também mostra só o texto (o prompt e o link ficam em `parts`). */
 export function plainInline(s: string): string {
+  return bare(s).replace(/[ \t]+/g, ' ').trim()
+}
+
+/** A marcação tirada, sem mexer nos espaços (para os pedaços juntarem do jeito certo). */
+function bare(s: string): string {
   return s
+    .replace(/<\/?prompt>/gi, '')
     .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
     .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
     .replace(/<((?:https?:|mailto:)[^>]+)>/g, '$1')
@@ -52,8 +58,65 @@ export function plainInline(s: string): string {
     .replace(/~~(.+?)~~/g, '$1')
     .replace(/(^|[^*\w])[*_]([^*_\s][^*_]*?)[*_](?=$|[^*\w])/g, '$1$2')
     .replace(/\\([\\`*_{}[\]()#+\-.!>])/g, '$1')
-    .replace(/[ \t]+/g, ' ')
-    .trim()
+}
+
+/** `<prompt>…</prompt>` e `[palavra](endereço)` no meio da linha (fora as fotos, os anexos e o cartão de link). */
+const RICH = /<prompt>([\s\S]*?)<\/prompt>|(?<!!)\[((?:\\.|[^\]\\])+)\]\((?!ideario:\/\/att\/)(<[^>]*>|[^)\s]*)\)/gi
+
+/**
+ * Os pedaços de uma ou mais linhas quando há prompt ou link na palavra, como `parts_of` em projection.rs: o texto de
+ * cada pedaço sem a marcação, os espaços repetidos juntos e nada nas pontas. Sem prompt nem link, nenhum.
+ */
+export function inlineParts(lines: string[]): PreviewPart[] {
+  const raw: PreviewPart[] = []
+  lines.forEach((line, i) => {
+    if (i > 0) raw.push({ text: '\n' })
+    const pieces = (s: string, prompt: boolean) => {
+      let at = 0
+      for (const m of s.matchAll(RICH)) {
+        if (m.index! > at) raw.push({ text: bare(s.slice(at, m.index)), ...(prompt ? { prompt } : {}) })
+        if (m[1] !== undefined) pieces(m[1], true)
+        else raw.push({ text: bare(m[2]), ...(prompt ? { prompt } : {}), href: m[3].replace(/^<|>$/g, '') })
+        at = m.index! + m[0].length
+      }
+      if (at < s.length) raw.push({ text: bare(s.slice(at)), ...(prompt ? { prompt } : {}) })
+    }
+    pieces(line, false)
+  })
+  if (!raw.some((p) => p.prompt || p.href)) return []
+  // A regra do `clean` letra por letra, como no Rust: o espaço entre dois pedaços fica no pedaço onde estava.
+  const chars: [string, number][] = []
+  let pending: number | null = null
+  raw.forEach((p, i) => {
+    for (const c of p.text) {
+      if (c === ' ' || c === '\t') pending ??= i
+      else if (c === '\n') {
+        while (chars.at(-1)?.[0] === ' ') chars.pop()
+        chars.push(['\n', i])
+        pending = null
+      } else {
+        if (pending !== null && chars.length && chars.at(-1)![0] !== '\n') chars.push([' ', pending])
+        pending = null
+        chars.push([c, i])
+      }
+    }
+  })
+  while (chars.length && /\s/.test(chars.at(-1)![0])) chars.pop()
+  while (chars.length && /\s/.test(chars[0][0])) chars.shift()
+  const out: PreviewPart[] = []
+  for (const [c, i] of chars) {
+    const { prompt, href } = raw[i]
+    const last = out.at(-1)
+    if (last && !!last.prompt === !!prompt && last.href === href) last.text += c
+    else out.push({ text: c, ...(prompt ? { prompt: true } : {}), ...(href ? { href } : {}) })
+  }
+  return out
+}
+
+/** `parts` só quando há o que mostrar (como o `skip_serializing_if` do Rust). */
+const withParts = (lines: string[]) => {
+  const parts = inlineParts(lines)
+  return parts.length ? { parts } : {}
 }
 
 /** Todos os blocos da nota, na ordem. */
@@ -62,8 +125,9 @@ export function blocksFromMarkdown(md: string): PreviewBlock[] {
   let para: string[] = []
   let code: string[] | null = null
   const flush = () => {
-    const text = para.map(plainInline).filter(Boolean).join('\n')
-    if (text) out.push({ kind: 'text', text })
+    const lines = para.filter((l) => plainInline(l))
+    const text = lines.map(plainInline).join('\n')
+    if (text) out.push({ kind: 'text', text, ...withParts(lines) })
     para = []
   }
   // Tabela em andamento: as linhas lidas e se a segunda foi a de traços (a primeira é de títulos).
@@ -111,18 +175,18 @@ export function blocksFromMarkdown(md: string): PreviewBlock[] {
     } else if ((m = line.match(/^#{1,6}\s+(.*?)\s*#*$/))) {
       flush()
       const text = plainInline(m[1])
-      if (text) out.push({ kind: 'heading', text })
+      if (text) out.push({ kind: 'heading', text, ...withParts([m[1]]) })
     } else if ((m = line.match(/^[-*+]\s+\[([ xX])\]\s*(.*)$/))) {
       flush()
-      out.push({ kind: 'task', text: plainInline(m[2]), done: m[1] !== ' ', depth })
+      out.push({ kind: 'task', text: plainInline(m[2]), done: m[1] !== ' ', depth, ...withParts([m[2]]) })
     } else if ((m = line.match(/^[-*+]\s+(.*)$/))) {
       flush()
       const text = plainInline(m[1])
-      if (text) out.push({ kind: 'bullet', text, depth })
+      if (text) out.push({ kind: 'bullet', text, depth, ...withParts([m[1]]) })
     } else if ((m = line.match(/^(\d+)[.)]\s+(.*)$/))) {
       flush()
       const text = plainInline(m[2])
-      if (text) out.push({ kind: 'ordered', text, n: Number(m[1]), depth })
+      if (text) out.push({ kind: 'ordered', text, n: Number(m[1]), depth, ...withParts([m[2]]) })
     } else if ((m = line.match(/^>\s?(.*)$/))) {
       para.push(m[1])
     } else if (line.startsWith('|')) {

@@ -7,7 +7,7 @@
   import { watchClip } from './clip'
   import { withHashtags } from './hashtags'
   import { FILE_ICONS } from './icons'
-  import type { PreviewBlock } from './types'
+  import type { PreviewBlock, PreviewPart } from './types'
 
   let {
     title = '',
@@ -30,6 +30,9 @@
 </script>
 
 {#snippet rich(text: string)}{#each withHashtags(text) as s, i (i)}{#if s.tag}<span class="hashtag">{s.text}</span>{:else}{s.text}{/if}{/each}{/snippet}
+<!-- Com prompt ou link na palavra, o texto vem em pedaços: o prompt aparece como no editor (entre colchetes) e o link
+     sublinhado (o clique é do card, que abre). -->
+{#snippet line(b: { text: string; parts?: PreviewPart[] })}{#if b.parts?.length}{#each b.parts as part, i (i)}{#if part.prompt}<span class="pv-prompt">{@render rich(part.text)}</span>{:else if part.href}<span class="pv-ilink">{@render rich(part.text)}</span>{:else}{@render rich(part.text)}{/if}{/each}{:else}{@render rich(b.text)}{/if}{/snippet}
 
 <div class="card-body">
   {#if emoji}<div class="card-emoji" aria-hidden="true">{emoji}</div>{/if}
@@ -46,7 +49,7 @@
           <p class="pv-more">{tn(b.count, '+{n} item', '+{n} itens')}</p>
         {:else if b.kind === 'task'}
           <p class="pv-task" class:done={b.done} style:--depth={b.depth}>
-            <span class="box">{#if b.done}<Check size={10} strokeWidth={3} />{/if}</span><span>{@render rich(b.text)}</span>
+            <span class="box">{#if b.done}<Check size={10} strokeWidth={3} />{/if}</span><span>{@render line(b)}</span>
           </p>
         {:else if b.kind === 'file'}
           {#if file}{@render file(b)}{:else}
@@ -67,9 +70,9 @@
             {#if b.header && b.rows[0]?.length}<p class="pv-tsum-cols">{b.rows[0].join(' · ')}</p>{/if}
           </div>
         {:else if b.kind === 'bullet' || b.kind === 'ordered'}
-          <p class="pv-li" style:--depth={b.depth} data-mark={b.kind === 'ordered' ? `${b.n}.` : '•'}>{@render rich(b.text)}</p>
+          <p class="pv-li" style:--depth={b.depth} data-mark={b.kind === 'ordered' ? `${b.n}.` : '•'}>{@render line(b)}</p>
         {:else}
-          <p class={b.kind === 'heading' ? 'pv-h' : 'pv-p'}>{@render rich(b.text)}</p>
+          <p class={b.kind === 'heading' ? 'pv-h' : 'pv-p'}>{@render line(b)}</p>
         {/if}
       {/each}
     </div>

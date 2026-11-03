@@ -16,6 +16,7 @@
     SquareCode, Palette, Table, TextQuote, Minus, BetweenHorizontalStart, BetweenVerticalStart, Paperclip, Plus, Redo2,
     Rows2, Square, Tag, Trash2, Undo2, X, ArrowDown, ArrowUp, Copy, CopyPlus, Download, Eye, GripVertical, ListTodo,
     Pilcrow, Scissors, SquareCheck, SquareDashed, ExternalLink, ListIndentDecrease, ListIndentIncrease, Link2, RefreshCw,
+    Link, Sparkles,
   } from '@lucide/svelte'
   import { bareUrl, fillPreview, insertLinkCard } from '../editor/link'
   import {
@@ -107,6 +108,7 @@
     const e = editor?.isFocused ? editor : null
     return {
       bold: !!e?.isActive('bold'), italic: !!e?.isActive('italic'),
+      prompt: !!e?.isActive('prompt'), link: !!e?.isActive('link'),
       heading: ([1, 2, 3] as const).find((level) => e?.isActive('heading', { level })) ?? 0,
       list: !!e?.isActive('bulletList'), check: !!e?.isActive('taskList'), code: !!e?.isActive('codeBlock'),
       undo: !!editor?.can().undo(), redo: !!editor?.can().redo(),
@@ -190,9 +192,42 @@
     return job.finally(() => imports.delete(job))
   }
 
+  // ---------- link na palavra ----------
+  /** Os links das palavras, na ordem do texto, um por endereço (com o texto da primeira vez): a lista "Links". */
+  const inlineLinks = $derived.by(() => {
+    void tick
+    const seen = new Map<string, string>()
+    editor?.state.doc.descendants((n) => {
+      const href = n.isText ? n.marks.find((m) => m.type.name === 'link')?.attrs.href : undefined
+      if (typeof href === 'string' && href) seen.set(href, (seen.get(href) ?? '') + (n.text ?? ''))
+    })
+    return [...seen].map(([href, text]) => ({ href, text: text.trim() || href, site: siteOf(href) }))
+  })
+  const siteOf = (url: string) => url.replace(/^[a-z]+:\/\//i, '').split(/[/?#]/)[0].replace(/^www\./, '')
+
+  /** Põe (ou troca, ou tira) o link da palavra escolhida. Com o cursor num link, edita aquele; vazio tira. */
+  async function inlineLink() {
+    if (!editor) return
+    const current = editor.getAttributes('link').href as string | undefined
+    if (editor.state.selection.empty && !current) {
+      say(t('Escolha a palavra que vai ter o link'))
+      return
+    }
+    const text = host.askText
+      ? await host.askText({ title: current ? t('Editar link') : t('Link na palavra'), label: t('Endereço (https://…) — vazio tira o link'), confirm: t('Pôr link'), value: current })
+      : window.prompt(t('Endereço (https://…)'), current ?? '')
+    if (text == null) return
+    const chain = editor.chain().focus().extendMarkRange('link')
+    if (!text.trim()) return void chain.unsetLink().run()
+    const url = bareUrl(text) ?? bareUrl(`https://${text}`)
+    if (!url) return say(t('Isso não parece um endereço'))
+    chain.setLink({ href: url }).run()
+  }
+
   // ---------- link ----------
-  /** "+ Link…": pede o endereço e põe o cartão onde está o cursor (a prévia chega depois). */
-  async function askLink() {
+  /** "+ Link…": pede o endereço e põe o cartão onde está o cursor (a prévia chega depois); `atEnd`, no fim da nota
+   *  (o "+" da lista de links). */
+  async function askLink(atEnd = false) {
     const text = host.askText
       ? await host.askText({ title: t('Inserir link'), label: t('Endereço (https://…)'), confirm: t('Inserir') })
       : window.prompt(t('Endereço (https://…)'))
@@ -204,7 +239,9 @@
     }
     // numa linha vazia, o cartão toma o lugar dela; no meio do texto, entra logo abaixo do bloco
     const at = editor.state.selection.$from
-    if (at.depth === 0) insertLinkCard(editor.view, url, at.pos, at.pos)
+    const end = editor.state.doc.content.size
+    if (atEnd) insertLinkCard(editor.view, url, end, end)
+    else if (at.depth === 0) insertLinkCard(editor.view, url, at.pos, at.pos)
     else {
       const block = at.node(1)
       const empty = block.type.name === 'paragraph' && block.content.size === 0
@@ -263,6 +300,21 @@
         ...(ydoc ? {} : { content: (content as object | string | undefined) ?? '' }),
         editorProps: {
           attributes: { id: 'corpo', role: 'textbox', 'aria-multiline': 'true', 'aria-label': t('Texto da nota'), spellcheck: 'true' },
+          // ⌘/Ctrl+K: link na palavra escolhida.
+          handleKeyDown: (_view, e) => {
+            if (!features.richText || !(e.metaKey || e.ctrlKey) || e.altKey || e.shiftKey || e.key.toLowerCase() !== 'k') return false
+            e.preventDefault()
+            void inlineLink()
+            return true
+          },
+          // ⌘/Ctrl+clique num link da palavra abre o endereço (o clique comum só põe o cursor, para editar).
+          handleClick: (view, pos, e) => {
+            if (!(e.metaKey || e.ctrlKey)) return false
+            const href = view.state.doc.resolve(pos).marks().find((m) => m.type.name === 'link')?.attrs.href
+            if (typeof href !== 'string' || !href) return false
+            host.openUrl?.(href)
+            return true
+          },
         },
         onTransaction: () => tick++,
         onSelectionUpdate: () => handleAtCaret(),
@@ -693,6 +745,22 @@
   </div>
   <MenuAt bind:this={blockMenu} />
 
+  {#if inlineLinks.length}
+    <!-- Lista de links: os das palavras entram sozinhos (tirar o link da palavra o tira daqui); o "+" põe um link só
+         na lista, como cartão no fim da nota. -->
+    <section class="ed-links" aria-label={t('Links')}>
+      <h3 class="ed-links-h">{t('Links')}</h3>
+      {#each inlineLinks as l (l.href)}
+        <button class="ed-link-row" onclick={() => host.openUrl?.(l.href)} title={l.href}>
+          <Link2 size={15} /><span class="ed-link-t">{l.text}</span><span class="ed-link-s">{l.site}</span>
+        </button>
+      {/each}
+      {#if features.links}
+        <button class="ed-link-row add" onclick={() => void askLink(true)}><Plus size={15} /><span class="ed-link-t">{t('Adicionar link')}</span></button>
+      {/if}
+    </section>
+  {/if}
+
   {#if files.length}
     <!-- Anexos antigos, fora do corpo: mesmo cartão dos anexos do texto. -->
     <div class="ed-files">
@@ -836,6 +904,9 @@
   {#if features.richText}
     <button onmousedown={(e) => e.preventDefault()} onclick={() => run((c) => c.toggleBold())} aria-label={t('Negrito')} aria-pressed={active.bold}><Bold size={18} /></button>
     <button onmousedown={(e) => e.preventDefault()} onclick={() => run((c) => c.toggleItalic())} aria-label={t('Itálico')} aria-pressed={active.italic}><Italic size={18} /></button>
+    <!-- Prompt: instrução para a IA no meio do texto (⌘⇧P). Link: na palavra escolhida (⌘K). -->
+    <button onmousedown={(e) => e.preventDefault()} onclick={() => run((c) => c.togglePrompt())} aria-label={t('Prompt')} title={t('Prompt: instrução para a IA')} aria-pressed={active.prompt}><Sparkles size={18} /></button>
+    <button onmousedown={(e) => e.preventDefault()} onclick={() => void inlineLink()} aria-label={t('Link na palavra')} title={t('Link na palavra')} aria-pressed={active.link}><Link size={18} /></button>
     <!-- Títulos como no Markdown: # grande, ## médio, ### pequeno. -->
     <DropdownMenu.Root>
       <DropdownMenu.Trigger aria-label={t('Título')} title={t('Título')} aria-pressed={!!active.heading} onmousedown={(e) => e.preventDefault()}><Heading size={18} /></DropdownMenu.Trigger>

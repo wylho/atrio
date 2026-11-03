@@ -22,7 +22,12 @@ describe('prévia de Markdown (as regras do Ideario)', () => {
     ].join('\n')
     expect(blocksFromMarkdown(md)).toEqual([
       { kind: 'heading', text: 'Plano' },
-      { kind: 'text', text: 'Primeira linha com negrito e link\nsegunda linha' },
+      {
+        kind: 'text',
+        text: 'Primeira linha com negrito e link\nsegunda linha',
+        // o link fica na palavra (pedaços para o card desenhar)
+        parts: [{ text: 'Primeira linha com negrito e ' }, { text: 'link', href: 'https://exemplo.com' }, { text: '\nsegunda linha' }],
+      },
       { kind: 'bullet', text: 'Tópico', depth: 0 },
       { kind: 'bullet', text: 'Filho', depth: 1 },
       { kind: 'ordered', text: 'Um', n: 1, depth: 0 },
