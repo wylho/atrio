@@ -24,6 +24,8 @@ b, strong { font-weight: bolder; }
   --card-edge: rgb(22 32 28 / .09);
   --accent: #2547c9;
   --accent-soft: #e2e8fb;
+  /* Prompt (instrução para a IA): o Terracota das categorias, o tom do DS mais perto do laranja do Claude. */
+  --prompt: #c26a3d; --prompt-soft: #f8e7dd;
   --on-accent: #ffffff;
   --late: #c03b2b;
   --late-soft: #fbe3df;
@@ -50,7 +52,7 @@ b, strong { font-weight: bolder; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #101513; --stage: #0a0e0d; --surface: #19211e; --raised: #1f2825; --fg: #e5ebe8; --muted: #93a19b; --line: #2b3632; --card-edge: rgb(255 255 255 / .07);
-    --accent: #8ea4ff; --accent-soft: #232c4d; --on-accent: #0d1430; --late: #ff8a78; --late-soft: #3a1f1b; --good: #6fd09a; --st-todo: #ff6369; --st-doing: #ffc53d; --st-done: #4cc38a;
+    --accent: #8ea4ff; --accent-soft: #232c4d; --prompt: #e8946a; --prompt-soft: #3b2a22; --on-accent: #0d1430; --late: #ff8a78; --late-soft: #3a1f1b; --good: #6fd09a; --st-todo: #ff6369; --st-doing: #ffc53d; --st-done: #4cc38a;
     --shadow: 0 1px 2px rgb(0 0 0 / .4); --float-shadow: 0 12px 32px rgb(0 0 0 / .55), 0 1px 3px rgb(0 0 0 / .4);
     --n-sand: #3a3125; --n-sage: #26352a; --n-sky: #22304a; --n-rose: #3d262c; --n-lilac: #2f2842; --n-butter: #39351e;
     color-scheme: dark;
@@ -58,7 +60,7 @@ b, strong { font-weight: bolder; }
 }
 :root[data-theme="dark"] {
   --bg: #101513; --stage: #0a0e0d; --surface: #19211e; --raised: #1f2825; --fg: #e5ebe8; --muted: #93a19b; --line: #2b3632; --card-edge: rgb(255 255 255 / .07);
-  --accent: #8ea4ff; --accent-soft: #232c4d; --on-accent: #0d1430; --late: #ff8a78; --late-soft: #3a1f1b; --good: #6fd09a; --st-todo: #ff6369; --st-doing: #ffc53d; --st-done: #4cc38a;
+  --accent: #8ea4ff; --accent-soft: #232c4d; --prompt: #e8946a; --prompt-soft: #3b2a22; --on-accent: #0d1430; --late: #ff8a78; --late-soft: #3a1f1b; --good: #6fd09a; --st-todo: #ff6369; --st-doing: #ffc53d; --st-done: #4cc38a;
   --shadow: 0 1px 2px rgb(0 0 0 / .4); --float-shadow: 0 12px 32px rgb(0 0 0 / .55), 0 1px 3px rgb(0 0 0 / .4);
   --n-sand: #3a3125; --n-sage: #26352a; --n-sky: #22304a; --n-rose: #3d262c; --n-lilac: #2f2842; --n-butter: #39351e;
   color-scheme: dark;
@@ -599,10 +601,10 @@ button { cursor: pointer; }
 }
 .prose pre code { font: inherit; }
 .prose .hashtag { color: var(--accent); font-weight: 500; }
-/* Prompt: instrução para a IA no meio do texto. Entre colchetes (do desenho, não do texto) e fundo suave na cor de
-   destaque; o mesmo no card fechado (.pv-prompt). Link na palavra: sublinhado na cor de destaque. */
+/* Prompt: instrução para a IA no meio do texto. Entre colchetes (do desenho, não do texto) e fundo suave no laranja do
+   prompt (--prompt, o Terracota); o mesmo no card fechado (.pv-prompt). Link na palavra: sublinhado na cor de destaque. */
 .prose .ed-prompt, .pv-prompt {
-  background: var(--accent-soft); color: var(--accent); border-radius: 5px; padding: 0 2px;
+  background: var(--prompt-soft); color: var(--prompt); border-radius: 5px; padding: 0 2px;
   box-decoration-break: clone; -webkit-box-decoration-break: clone;
 }
 .prose .ed-prompt::before, .pv-prompt::before { content: '['; opacity: .6; }

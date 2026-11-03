@@ -166,7 +166,7 @@ Single-context: `GLOSSARY.md` na raiz (quando houver); as decisões são as do `
   recebe promessas: a cópia começa no gesto). A v1 continua sendo lida. Testes em `tests/clipboard.test.ts`.
 - **0.25.0**: **prompt e link na palavra** (pedido do usuário, `.scratch/prompt-links-janela/`). **Prompt**: marca
   `prompt` do TipTap (`src/editor/prompt.ts`, botão ✦ na barra e ⌘⇧P), um trecho do texto que é instrução para a IA;
-  na tela entre colchetes com fundo suave (`.ed-prompt`, os colchetes são do CSS; escolha do usuário), no Markdown
+  na tela entre colchetes com fundo suave em laranja (`.ed-prompt`, os colchetes são do CSS; escolha do usuário), no Markdown
   `<prompt>…</prompt>` (`atrio::markdown`). **Link na palavra**: a marca `link` do StarterKit ligada, só com `href`
   (`target`/`rel`/`class`/`title` vazios, que o `canon` descarta), botão e ⌘K (`inlineLink`; o `askText` do app
   recebe `value`), ⌘/Ctrl+clique abre; Markdown `[palavra](endereço)` de ida e volta (antes virava "palavra
@@ -182,6 +182,8 @@ Single-context: `GLOSSARY.md` na raiz (quando houver); as decisões são as do `
 - **0.26.1**: o link do ⌘K ia para um pedaço errado da palavra ("ção" de "apresentação"): enquanto o app pede o
   endereço, o foco sai do editor e a seleção muda, e o editor lê a seleção do navegador com atraso. `inlineLink` lê a
   seleção na hora (`domObserver.flush()`), guarda e aplica o link nela. Teste em `tests/prompt.test.ts`.
+- **0.26.2**: o prompt em laranja (pedido do usuário: o tom do DS mais perto do laranja do Claude): tokens `--prompt`
+  (o Terracota `#c26a3d` das categorias; `#e8946a` no escuro) e `--prompt-soft` no fundo.
 - Em uso: o Ideario (card inteiro, `NoteEditor`) e o Nodo (o nó é o card: `CardBody` + `CardPills` no mapa,
   `CardDialog` + `NoteEditor` ao abrir, com `features({ category: false, links: false })`: fotos, arquivos, câmera e
   gravador entram no `.nodo`, um zip com os anexos).
