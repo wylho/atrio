@@ -54,6 +54,10 @@ pub fn canon_texts(nodes: &[Value]) -> Vec<Value> {
             .map(|m| {
                 let mut m = m.clone();
                 if let Some(o) = m.as_object_mut() {
+                    // O editor guarda no link também `target`, `rel` e `class` vazios: não contam.
+                    if let Some(a) = o.get_mut("attrs").and_then(Value::as_object_mut) {
+                        a.retain(|_, v| !v.is_null());
+                    }
                     if o.get("attrs")
                         .is_some_and(|a| a.is_null() || a.as_object().is_some_and(|a| a.is_empty()))
                     {

@@ -37,11 +37,25 @@ fn inline(nasty: bool) -> BoxedStrategy<Vec<Value>> {
         prop::bool::weighted(0.15),
         prop::bool::weighted(0.15),
     );
-    let run = (words(nasty), marks, prop::bool::weighted(0.1));
+    // Prompt e link na palavra (o link num de poucos endereços, para dois trechos seguidos às vezes terem o mesmo).
+    let extra = (
+        prop::bool::weighted(0.15),
+        prop::option::weighted(
+            0.15,
+            prop::sample::select(vec![
+                "https://exemplo.com/a",
+                "https://exemplo.com/b?q=1&r=2",
+                "https://exemplo.com/c (2)",
+            ]),
+        ),
+    );
+    let run = (words(nasty), marks, extra, prop::bool::weighted(0.1));
     prop::collection::vec(run, 1..4)
         .prop_map(|runs| {
             let mut out: Vec<Value> = Vec::new();
-            for (i, (text, (bold, italic, strike, code), br)) in runs.into_iter().enumerate() {
+            for (i, (text, (bold, italic, strike, code), (prompt, link), br)) in
+                runs.into_iter().enumerate()
+            {
                 if i > 0 {
                     if br {
                         out.push(json!({"type": "hardBreak"}));
@@ -61,6 +75,12 @@ fn inline(nasty: bool) -> BoxedStrategy<Vec<Value>> {
                 }
                 if code {
                     marks.push(json!({"type": "code"}));
+                }
+                if let Some(href) = link {
+                    marks.push(json!({"type": "link", "attrs": {"href": href}}));
+                }
+                if prompt {
+                    marks.push(json!({"type": "prompt"}));
                 }
                 let mut t = json!({"type": "text", "text": text});
                 if !marks.is_empty() {

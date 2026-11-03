@@ -15,29 +15,52 @@ const MAX_CODE_LINES: usize = 8;
 /// Linhas de uma tabela na prévia; as outras viram "+N linhas".
 const MAX_TABLE_ROWS: usize = 8;
 
+/// Pedaço de um texto da prévia que tem prompt ou link na palavra (o resto do texto vai em pedaços sem nada).
+#[derive(Debug, Clone, Serialize, PartialEq, Default)]
+pub struct Part {
+    pub text: String,
+    /// Instrução para a IA (`<prompt>` no Markdown).
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub prompt: bool,
+    /// Link na palavra.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub href: Option<String>,
+}
+
 /// Bloco da prévia do card, na ordem do documento (o mesmo formato de `PreviewBlock` em src/lib/types.ts).
 #[derive(Debug, Clone, Serialize, PartialEq)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum Block {
+    /// `parts` (texto, lista e tarefa): os pedaços do texto quando há prompt ou link na palavra; sem isso, vazio.
     Heading {
         text: String,
+        #[serde(skip_serializing_if = "Vec::is_empty")]
+        parts: Vec<Part>,
     },
     Text {
         text: String,
+        #[serde(skip_serializing_if = "Vec::is_empty")]
+        parts: Vec<Part>,
     },
     Bullet {
         text: String,
         depth: u32,
+        #[serde(skip_serializing_if = "Vec::is_empty")]
+        parts: Vec<Part>,
     },
     Ordered {
         text: String,
         n: i64,
         depth: u32,
+        #[serde(skip_serializing_if = "Vec::is_empty")]
+        parts: Vec<Part>,
     },
     Task {
         text: String,
         done: bool,
         depth: u32,
+        #[serde(skip_serializing_if = "Vec::is_empty")]
+        parts: Vec<Part>,
     },
     #[serde(rename_all = "camelCase")]
     /// `hash`: para a interface pedir a miniatura (foto, primeira página do PDF, quadro do vídeo).
@@ -72,8 +95,8 @@ pub enum Block {
 impl Block {
     fn text(&self) -> Option<&str> {
         match self {
-            Block::Heading { text }
-            | Block::Text { text }
+            Block::Heading { text, .. }
+            | Block::Text { text, .. }
             | Block::Bullet { text, .. }
             | Block::Ordered { text, .. } => Some(text),
             Block::Task { text, .. }
@@ -161,6 +184,85 @@ fn inline(n: &Value) -> String {
     }
 }
 
+/// Os pedaços do texto de um parágrafo quando ele tem prompt ou link na palavra; senão, nenhum. Os espaços seguem a
+/// regra do `clean` (repetidos viram um, nada nas pontas), para o texto dos pedaços bater com o `text` do bloco.
+fn parts_of(n: &Value) -> Vec<Part> {
+    let mut raw: Vec<Part> = Vec::new();
+    collect_parts(n, &mut raw);
+    if !raw.iter().any(|p| p.prompt || p.href.is_some()) {
+        return Vec::new();
+    }
+    // A mesma regra do `clean`, letra por letra, lembrando de que pedaço cada letra veio. O espaço que fica entre dois
+    // pedaços é do pedaço onde ele estava (não entra no prompt seguinte).
+    let mut chars: Vec<(char, usize)> = Vec::new();
+    let mut pending: Option<usize> = None;
+    for (i, part) in raw.iter().enumerate() {
+        for c in part.text.chars() {
+            match c {
+                ' ' | '\t' => {
+                    pending.get_or_insert(i);
+                }
+                '\n' => {
+                    while chars.last().is_some_and(|(c, _)| *c == ' ') {
+                        chars.pop();
+                    }
+                    chars.push(('\n', i));
+                    pending = None;
+                }
+                _ => {
+                    if let Some(from) = pending.take() {
+                        if chars.last().is_some_and(|(c, _)| *c != '\n') {
+                            chars.push((' ', from));
+                        }
+                    }
+                    chars.push((c, i));
+                }
+            }
+        }
+    }
+    while chars.last().is_some_and(|(c, _)| c.is_whitespace()) {
+        chars.pop();
+    }
+    let start = chars.iter().take_while(|(c, _)| c.is_whitespace()).count();
+    let mut out: Vec<Part> = Vec::new();
+    for (c, i) in chars.into_iter().skip(start) {
+        let (prompt, href) = (raw[i].prompt, &raw[i].href);
+        match out.last_mut() {
+            Some(last) if last.prompt == prompt && &last.href == href => last.text.push(c),
+            _ => out.push(Part {
+                text: c.to_string(),
+                prompt,
+                href: href.clone(),
+            }),
+        }
+    }
+    out
+}
+
+fn collect_parts(n: &Value, out: &mut Vec<Part>) {
+    match kind(n) {
+        "text" => {
+            let marks = n.get("marks").and_then(Value::as_array);
+            let prompt = marks.is_some_and(|ms| ms.iter().any(|m| m["type"] == "prompt"));
+            let href = marks
+                .and_then(|ms| ms.iter().find(|m| m["type"] == "link"))
+                .and_then(|m| m["attrs"]["href"].as_str())
+                .map(str::to_string);
+            let text = n
+                .get("text")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .to_string();
+            out.push(Part { text, prompt, href });
+        }
+        "hardBreak" => out.push(Part {
+            text: "\n".into(),
+            ..Part::default()
+        }),
+        _ => children(n).iter().for_each(|c| collect_parts(c, out)),
+    }
+}
+
 fn list_items(
     list: &Value,
     depth: u32,
@@ -173,8 +275,9 @@ fn list_items(
         .and_then(Value::as_i64)
         .unwrap_or(1);
     for (i, item) in children(list).iter().enumerate() {
-        let parts = children(item);
-        let text = parts.first().map(|f| clean(&inline(f))).unwrap_or_default();
+        let kids = children(item);
+        let text = kids.first().map(|f| clean(&inline(f))).unwrap_or_default();
+        let parts = kids.first().map(parts_of).unwrap_or_default();
         match kind(list) {
             "taskList" => {
                 let done = item
@@ -182,17 +285,23 @@ fn list_items(
                     .and_then(|a| a.get("checked"))
                     .and_then(Value::as_bool)
                     .unwrap_or(false);
-                p.blocks.push(Block::Task { text, done, depth });
+                p.blocks.push(Block::Task {
+                    text,
+                    done,
+                    depth,
+                    parts,
+                });
             }
             "orderedList" if !text.is_empty() => p.blocks.push(Block::Ordered {
                 text,
                 n: start + i as i64,
                 depth,
+                parts,
             }),
-            "bulletList" if !text.is_empty() => p.blocks.push(Block::Bullet { text, depth }),
+            "bulletList" if !text.is_empty() => p.blocks.push(Block::Bullet { text, depth, parts }),
             _ => {}
         }
-        for rest in parts.iter().skip(1) {
+        for rest in kids.iter().skip(1) {
             block(rest, depth + 1, p, file);
         }
     }
@@ -208,13 +317,19 @@ fn block(
         "paragraph" => {
             let text = clean(&inline(n));
             if !text.is_empty() {
-                p.blocks.push(Block::Text { text });
+                p.blocks.push(Block::Text {
+                    text,
+                    parts: parts_of(n),
+                });
             }
         }
         "heading" => {
             let text = clean(&inline(n));
             if !text.is_empty() {
-                p.blocks.push(Block::Heading { text });
+                p.blocks.push(Block::Heading {
+                    text,
+                    parts: parts_of(n),
+                });
             }
         }
         "bulletList" | "orderedList" | "taskList" => list_items(n, depth, p, file),
@@ -383,13 +498,17 @@ pub fn plain_text(title: &str, p: &Projection) -> String {
     }
     for b in &p.blocks {
         let line = match b {
-            Block::Task { text, done, depth } => format!(
+            Block::Task {
+                text, done, depth, ..
+            } => format!(
                 "{}{} {text}",
                 "  ".repeat(*depth as usize),
                 if *done { '☑' } else { '☐' }
             ),
-            Block::Bullet { text, depth } => format!("{}• {text}", "  ".repeat(*depth as usize)),
-            Block::Ordered { text, n, depth } => {
+            Block::Bullet { text, depth, .. } => {
+                format!("{}• {text}", "  ".repeat(*depth as usize))
+            }
+            Block::Ordered { text, n, depth, .. } => {
                 format!("{}{n}. {text}", "  ".repeat(*depth as usize))
             }
             other => other.text().unwrap_or("").to_string(),
@@ -432,7 +551,8 @@ mod tests {
                     text: "Item · Qtd\nArroz".into(),
                 },
                 Block::Text {
-                    text: "citação #ideia".into()
+                    text: "citação #ideia".into(),
+                    parts: vec![]
                 },
             ]
         );
@@ -511,18 +631,24 @@ mod tests {
             p.preview,
             vec![
                 Block::Heading {
-                    text: "Ingredientes".into()
+                    text: "Ingredientes".into(),
+                    parts: vec![]
                 },
                 Block::Bullet {
                     text: "farinha".into(),
-                    depth: 0
+                    depth: 0,
+                    parts: vec![]
                 },
                 Block::Task {
                     text: "comprar #casa".into(),
                     done: true,
-                    depth: 0
+                    depth: 0,
+                    parts: vec![]
                 },
-                Block::Text { text: "fim".into() },
+                Block::Text {
+                    text: "fim".into(),
+                    parts: vec![]
+                },
             ]
         );
         assert_eq!(p.hash_tags, vec!["casa"]);
@@ -581,6 +707,7 @@ mod same_card {
     //! pelos dois caminhos.
     use super::*;
     use proptest::prelude::*;
+    use serde_json::json;
 
     fn file(h: &str) -> Option<(String, String)> {
         Some((format!("{h}.pdf"), "pdf".into()))
@@ -604,5 +731,61 @@ mod same_card {
             prop_assert_eq!(&md.hash_tags, &direct.hash_tags);
             prop_assert_eq!(&md.text, &direct.text);
         }
+
+        #[test]
+        fn the_pieces_of_a_text_are_exactly_its_text(doc in crate::testdoc::doc(true)) {
+            for b in project(&doc, &file).blocks {
+                let (text, parts) = match &b {
+                    Block::Text { text, parts } | Block::Heading { text, parts } => (text, parts),
+                    Block::Bullet { text, parts, .. } | Block::Ordered { text, parts, .. } | Block::Task { text, parts, .. } => (text, parts),
+                    _ => continue,
+                };
+                if !parts.is_empty() {
+                    let joined: String = parts.iter().map(|p| p.text.as_str()).collect();
+                    prop_assert_eq!(&joined, text);
+                    prop_assert!(parts.iter().any(|p| p.prompt || p.href.is_some()));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn prompt_and_link_show_in_the_closed_card() {
+        let body = json!({"type":"doc","content":[
+            {"type":"paragraph","content":[
+                {"type":"text","text":"Revisar  o orçamento "},
+                {"type":"text","text":"resuma em 3 tópicos","marks":[{"type":"prompt"}]},
+                {"type":"text","text":" e ver a "},
+                {"type":"text","text":"Apresentação","marks":[{"type":"link","attrs":{"href":"https://exemplo.com/p"}}]},
+            ]},
+            {"type":"paragraph","content":[{"type":"text","text":"sem nada"}]},
+        ]});
+        let p = project(&body, &|_: &str| None);
+        let part = |text: &str, prompt: bool, href: Option<&str>| Part {
+            text: text.into(),
+            prompt,
+            href: href.map(str::to_string),
+        };
+        assert_eq!(
+            p.preview[0],
+            Block::Text {
+                text: "Revisar o orçamento resuma em 3 tópicos e ver a Apresentação".into(),
+                parts: vec![
+                    part("Revisar o orçamento ", false, None),
+                    part("resuma em 3 tópicos", true, None),
+                    part(" e ver a ", false, None),
+                    part("Apresentação", false, Some("https://exemplo.com/p")),
+                ],
+            }
+        );
+        // Sem prompt nem link, a prévia fica como era (sem `parts` no JSON).
+        assert_eq!(
+            serde_json::to_value(&p.preview[1]).unwrap(),
+            json!({"kind":"text","text":"sem nada"})
+        );
+        assert_eq!(
+            serde_json::to_value(&p.preview[0]).unwrap()["parts"][1],
+            json!({"text":"resuma em 3 tópicos","prompt":true})
+        );
     }
 }

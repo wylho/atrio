@@ -9,9 +9,10 @@
 //! - foto `![nome](ideario://att/<hash>)` (várias na mesma linha = fotos lado a lado) e anexo
 //!   `[📎 nome](ideario://att/<hash>)`, sozinhos na linha;
 //! - parágrafo vazio = `&nbsp;` (sem isso o Markdown perde as linhas em branco da nota);
-//! - cartão de link = `[🔗 título](endereço)` sozinho na linha (descrição e imagem ficam guardadas na nota).
+//! - cartão de link = `[🔗 título](endereço)` sozinho na linha (descrição e imagem ficam guardadas na nota);
+//! - prompt (instrução para a IA no meio do texto) = `<prompt>…</prompt>`; link na palavra = `[palavra](endereço)`.
 //!
-//! O que o editor não tem vira texto: link → "texto (endereço)", HTML → o texto dele.
+//! O que o editor não tem vira texto: HTML → o texto dele.
 //! Ida e volta (nota → Markdown → nota) devolve a mesma nota: é o que deixa o MCP editar um pedaço do texto sem
 //! mexer no resto (ver os testes de propriedade).
 
@@ -255,18 +256,84 @@ fn indent(s: &str, n: usize) -> String {
         .join("\n")
 }
 
-/// Texto com negrito/itálico e quebras de linha. Espaços nas pontas de um trecho marcado ficam de fora das marcas
-/// (`** a**` não seria negrito).
+/// O que embrulha um trecho inteiro (vários nós de texto seguidos): o prompt e o link na palavra.
+#[derive(PartialEq)]
+struct Wrap {
+    prompt: bool,
+    href: Option<String>,
+}
+
+fn wrap_of(n: &Value) -> Wrap {
+    let marks = n.get("marks").and_then(Value::as_array);
+    let has = |t: &str| marks.is_some_and(|ms| ms.iter().any(|m| m["type"] == t));
+    let href = marks
+        .and_then(|ms| ms.iter().find(|m| m["type"] == "link"))
+        .and_then(|m| m["attrs"]["href"].as_str())
+        .filter(|h| !h.is_empty())
+        .map(str::to_string);
+    Wrap {
+        prompt: kind(n) == "text" && has("prompt"),
+        href: if kind(n) == "text" { href } else { None },
+    }
+}
+
+/// Texto com negrito/itálico, prompt (`<prompt>…</prompt>`), link na palavra (`[palavra](endereço)`) e quebras de
+/// linha. Trechos seguidos com o mesmo prompt ou o mesmo link saem num embrulho só; espaços nas pontas ficam de fora.
 fn inline(nodes: &[Value], heading: bool) -> String {
     let mut out = String::new();
     let mut line_start = true;
+    let mut i = 0;
+    while i < nodes.len() {
+        let wrap = wrap_of(&nodes[i]);
+        let mut j = i + 1;
+        while j < nodes.len() && wrap_of(&nodes[j]) == wrap {
+            j += 1;
+        }
+        let group = &nodes[i..j];
+        i = j;
+        if !wrap.prompt && wrap.href.is_none() {
+            plain_inline(group, heading, &mut line_start, &mut out);
+            continue;
+        }
+        let mut inner = String::new();
+        plain_inline(group, heading, &mut false, &mut inner);
+        let core = inner.trim_matches(' ');
+        if core.is_empty() {
+            plain_inline(group, heading, &mut line_start, &mut out);
+            continue;
+        }
+        let lead = &inner[..inner.len() - inner.trim_start_matches(' ').len()];
+        let trail = &inner[inner.trim_end_matches(' ').len()..];
+        out.push_str(&esc(lead, line_start, heading));
+        let mut piece = core.to_string();
+        if let Some(href) = &wrap.href {
+            // "!" logo antes do "[" faria uma foto
+            if out.ends_with('!') && !out.ends_with("\\!") {
+                out.pop();
+                out.push_str("\\!");
+            }
+            piece = format!("[{piece}]({})", link_dest(href));
+        }
+        if wrap.prompt {
+            piece = format!("<prompt>{piece}</prompt>");
+        }
+        out.push_str(&piece);
+        out.push_str(trail);
+        line_start = false;
+    }
+    out
+}
+
+/// Os nós de texto com as marcas simples (negrito, itálico, tachado, código). Espaços nas pontas de um trecho marcado
+/// ficam de fora das marcas (`** a**` não seria negrito).
+fn plain_inline(nodes: &[Value], heading: bool, line_start: &mut bool, out: &mut String) {
     for n in nodes {
         match kind(n) {
             // título é uma linha só: a quebra fica como <br>
             "hardBreak" if heading => out.push_str("<br>"),
             "hardBreak" => {
                 out.push('\n');
-                line_start = true;
+                *line_start = true;
             }
             "text" => {
                 let text = n.get("text").and_then(Value::as_str).unwrap_or("");
@@ -289,15 +356,15 @@ fn inline(nodes: &[Value], heading: bool) -> String {
                 for (k, piece) in text.split('\n').enumerate() {
                     if k > 0 {
                         out.push('\n');
-                        line_start = true;
+                        *line_start = true;
                     }
                     let core = piece.trim_matches(' ');
                     if (emph.is_empty() && strike.is_empty() && !code) || core.is_empty() {
-                        out.push_str(&esc(piece, line_start, heading));
+                        out.push_str(&esc(piece, *line_start, heading));
                     } else {
                         let lead = &piece[..piece.len() - piece.trim_start_matches(' ').len()];
                         let trail = &piece[piece.trim_end_matches(' ').len()..];
-                        out.push_str(&esc(lead, line_start, heading));
+                        out.push_str(&esc(lead, *line_start, heading));
                         out.push_str(strike);
                         out.push_str(emph);
                         out.push_str(&if code {
@@ -310,14 +377,13 @@ fn inline(nodes: &[Value], heading: bool) -> String {
                         out.push_str(trail);
                     }
                     if !piece.is_empty() {
-                        line_start = false;
+                        *line_start = false;
                     }
                 }
             }
             _ => {}
         }
     }
-    out
 }
 
 /// `código` no meio do texto: a cerca de crases é maior que qualquer sequência de crases de dentro; com crase nas
@@ -513,7 +579,8 @@ enum Frame {
 /// Pedaço de texto de um parágrafo.
 #[derive(Clone)]
 enum Piece {
-    Text(String, Vec<&'static str>),
+    /// Texto, as marcas simples e o link na palavra (o endereço).
+    Text(String, Vec<&'static str>, Option<String>),
     Break,
     Image(String),
     File(String),
@@ -702,6 +769,11 @@ pub fn from_markdown(md: &str) -> Value {
                 }
             }
             Event::InlineHtml(t) if is_br(&t) => push_piece(&mut stack, Piece::Break),
+            // o prompt no meio do texto: uma marca, como o negrito
+            Event::InlineHtml(t) if prompt_tag(&t) == Some(true) => marks.push("prompt"),
+            Event::InlineHtml(t) if prompt_tag(&t) == Some(false) => {
+                remove_last(&mut marks, "prompt")
+            }
             Event::Code(t) => {
                 let mut with_code = marks.clone();
                 with_code.push("code");
@@ -872,7 +944,7 @@ fn push_text(stack: &mut Vec<Frame>, t: &str, marks: &[&'static str]) {
             push_piece(stack, Piece::Break);
         }
         if !line.is_empty() {
-            push_piece(stack, Piece::Text(line.to_string(), marks.to_vec()));
+            push_piece(stack, Piece::Text(line.to_string(), marks.to_vec(), None));
         }
     }
 }
@@ -885,7 +957,7 @@ fn push_piece(stack: &mut Vec<Frame>, p: Piece) {
         | Some(Frame::Link { inner: v, .. })
         | Some(Frame::Cell(v)) => v.push(p),
         Some(Frame::Code { text, .. }) => {
-            if let Piece::Text(t, _) = p {
+            if let Piece::Text(t, ..) = p {
                 text.push_str(&t)
             }
         }
@@ -903,7 +975,7 @@ fn push_blocks(stack: &mut [Frame], blocks: Vec<Value>) {
             for b in blocks {
                 let text = plain(&b);
                 if !text.is_empty() {
-                    v.push(Piece::Text(text, vec![]));
+                    v.push(Piece::Text(text, vec![], None));
                 }
             }
         }
@@ -922,7 +994,16 @@ fn plain(node: &Value) -> String {
     }
 }
 
-/// Link e imagem: anexo do Ideario vira foto/arquivo; o resto, texto ("texto (endereço)").
+/// `<prompt>` abre (`Some(true)`), `</prompt>` fecha (`Some(false)`); outra coisa, `None`.
+fn prompt_tag(html: &str) -> Option<bool> {
+    match html.trim().to_ascii_lowercase().as_str() {
+        "<prompt>" => Some(true),
+        "</prompt>" => Some(false),
+        _ => None,
+    }
+}
+
+/// Link e imagem: anexo do Ideario vira foto/arquivo; o resto, o link na palavra.
 fn link_pieces(url: String, image: bool, inner: Vec<Piece>) -> Vec<Piece> {
     if let Some(hash) = url.strip_prefix(ATT) {
         let hash = hash.trim_end_matches('/').to_string();
@@ -935,7 +1016,7 @@ fn link_pieces(url: String, image: bool, inner: Vec<Piece>) -> Vec<Piece> {
     let label: String = inner
         .iter()
         .filter_map(|p| {
-            if let Piece::Text(t, _) = p {
+            if let Piece::Text(t, ..) = p {
                 Some(t.as_str())
             } else {
                 None
@@ -959,17 +1040,16 @@ fn link_pieces(url: String, image: bool, inner: Vec<Piece>) -> Vec<Piece> {
         .into_iter()
         .filter(|p| !matches!(p, Piece::Image(_) | Piece::File(_)))
         .collect();
-    if url.is_empty()
-        || label == url
-        || label.trim_start_matches("mailto:") == url.trim_start_matches("mailto:")
-    {
-        if out.is_empty() {
-            out.push(Piece::Text(url, vec![]));
+    if out.is_empty() {
+        out.push(Piece::Text(url.clone(), vec![], None));
+    }
+    // O link fica na palavra (uma imagem de fora não é anexo da nota: fica só o texto).
+    if !url.is_empty() && !image {
+        for p in &mut out {
+            if let Piece::Text(_, _, link) = p {
+                *link = Some(url.clone());
+            }
         }
-    } else if out.is_empty() {
-        out.push(Piece::Text(url, vec![]));
-    } else {
-        out.push(Piece::Text(format!(" ({url})"), vec![]));
     }
     out
 }
@@ -989,7 +1069,7 @@ fn paragraph_blocks(pieces: Vec<Piece>) -> Vec<Value> {
         }
         let blank = text
             .iter()
-            .all(|p| matches!(p, Piece::Text(t, _) if t.trim().is_empty()));
+            .all(|p| matches!(p, Piece::Text(t, ..) if t.trim().is_empty()));
         if !text.is_empty() && !blank {
             out.push(json!({"type": "paragraph", "content": inline_nodes(text)}));
         }
@@ -1011,11 +1091,11 @@ fn paragraph_blocks(pieces: Vec<Piece>) -> Vec<Value> {
     };
     let only_space = |pieces: &[Piece]| {
         pieces.iter().all(|p| {
-            matches!(p, Piece::Break) || matches!(p, Piece::Text(t, _) if t.trim().is_empty())
+            matches!(p, Piece::Break) || matches!(p, Piece::Text(t, ..) if t.trim().is_empty())
         })
     };
     // parágrafo vazio da nota
-    if pieces.len() == 1 && matches!(&pieces[0], Piece::Text(t, _) if t == NBSP) {
+    if pieces.len() == 1 && matches!(&pieces[0], Piece::Text(t, ..) if t == NBSP) {
         return vec![json!({"type": "paragraph"})];
     }
     for p in pieces {
@@ -1043,7 +1123,7 @@ fn paragraph_blocks(pieces: Vec<Piece>) -> Vec<Value> {
             }
             other => {
                 // espaço entre fotos da mesma linha não quebra a linha de fotos
-                let space = matches!(&other, Piece::Text(t, _) if t.trim().is_empty());
+                let space = matches!(&other, Piece::Text(t, ..) if t.trim().is_empty());
                 if !(space && !images.is_empty()) {
                     flush_images(&mut images, &mut out);
                     text.push(other);
@@ -1063,14 +1143,26 @@ fn inline_nodes(pieces: &[Piece]) -> Vec<Value> {
     let mut out = Vec::new();
     for p in pieces {
         match p {
-            Piece::Text(t, marks) => {
+            Piece::Text(t, marks, link) => {
                 let t = t.replace(NBSP, " ");
                 let mut node = json!({"type": "text", "text": t});
                 let mut ms: Vec<&str> = marks.clone();
+                if link.is_some() {
+                    ms.push("link");
+                }
                 ms.sort_unstable();
                 ms.dedup();
                 if !ms.is_empty() {
-                    node["marks"] = Value::Array(ms.iter().map(|m| json!({"type": m})).collect());
+                    node["marks"] = Value::Array(
+                        ms.iter()
+                            .map(|m| match (*m, link) {
+                                ("link", Some(href)) => {
+                                    json!({"type": "link", "attrs": {"href": href}})
+                                }
+                                _ => json!({"type": m}),
+                            })
+                            .collect(),
+                    );
                 }
                 out.push(node);
             }
@@ -1200,14 +1292,64 @@ mod tests {
             "Veja [o site](https://ideario.app) e <https://x.y>\n\n<b>negrito</b> em HTML",
         );
         let c = doc["content"].as_array().unwrap();
+        // O link fica na palavra (antes virava "o site (https://ideario.app)").
         assert_eq!(
-            c[0]["content"][0]["text"],
-            "Veja o site (https://ideario.app) e https://x.y"
+            c[0]["content"],
+            json!([
+                {"type":"text","text":"Veja "},
+                {"type":"text","text":"o site","marks":[{"type":"link","attrs":{"href":"https://ideario.app"}}]},
+                {"type":"text","text":" e "},
+                {"type":"text","text":"https://x.y","marks":[{"type":"link","attrs":{"href":"https://x.y"}}]},
+            ])
         );
         assert_eq!(
             c[1]["content"][0]["text"], "<b>negrito</b> em HTML",
             "HTML fica como texto"
         );
+    }
+
+    #[test]
+    fn prompt_in_the_middle_of_the_text_goes_and_comes_back() {
+        let p = |text: &str, marks: Value| json!({"type":"text","text":text,"marks":marks});
+        let doc = json!({"type":"doc","content":[{"type":"paragraph","content":[
+            {"type":"text","text":"Revisar o orçamento "},
+            p("resuma em ", json!([{"type":"prompt"}])),
+            p("3 tópicos", json!([{"type":"bold"},{"type":"prompt"}])),
+            {"type":"text","text":" antes."},
+        ]}]});
+        let md = to_markdown(&doc, &|_: &str| None);
+        assert_eq!(
+            md,
+            "Revisar o orçamento <prompt>resuma em **3 tópicos**</prompt> antes."
+        );
+        assert_eq!(from_markdown(&md), crate::canon::canon(&doc));
+        // Texto comum com colchetes e com a palavra "prompt" não vira prompt.
+        let plain = json!({"type":"doc","content":[{"type":"paragraph","content":[{"type":"text","text":"[rascunho] <prompt>"}]}]});
+        assert_eq!(
+            from_markdown(&to_markdown(&plain, &|_: &str| None)),
+            crate::canon::canon(&plain)
+        );
+    }
+
+    #[test]
+    fn link_on_a_word_goes_and_comes_back() {
+        let l = |text: &str, href: &str| json!({"type":"text","text":text,"marks":[{"type":"link","attrs":{"href":href}}]});
+        let doc = json!({"type":"doc","content":[{"type":"paragraph","content":[
+            {"type":"text","text":"Ver a "},
+            l("Apresentação", "https://exemplo.com/p/3fe9"),
+            {"type":"text","text":" e o "},
+            l("roteiro (v2)", "https://exemplo.com/a b(1)"),
+            {"type":"text","text":"!"},
+        ]}]});
+        let md = to_markdown(&doc, &|_: &str| None);
+        assert!(
+            md.starts_with("Ver a [Apresentação](https://exemplo.com/p/3fe9) e o "),
+            "{md}"
+        );
+        assert_eq!(from_markdown(&md), crate::canon::canon(&doc));
+        // O cartão de link (sozinho na linha) continua sendo o cartão.
+        let card = from_markdown("[🔗 Planilha](https://exemplo.com/s)");
+        assert_eq!(card["content"][0]["type"], "linkCard");
     }
 
     #[test]

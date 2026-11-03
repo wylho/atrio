@@ -32,6 +32,7 @@ porque ele é o hub: a pendência de um app que for peça comum vira tarefa do A
 | 10 | Nodo: estruturas e formatos do XMind que faltam | nodo | needs-triage |
 | 11 | Ideario: sync com conta Google real, cache LRU, só no Wi-Fi | ideario | needs-info |
 | 12 | Ideario: Android (backup, importar Keep, widget) | ideario | needs-triage |
+| 14 | Prompt, link na palavra e card em nova janela ([spec](../prompt-links-janela/spec.md)) | atrio, ambos | ready-for-agent |
 | 13 | Limpar o "Próximo" do `CLAUDE.md` do Nodo (itens já feitos) | nodo | feita |
 
 ## Decisões até aqui
