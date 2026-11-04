@@ -184,6 +184,12 @@ Single-context: `GLOSSARY.md` na raiz (quando houver); as decisões são as do `
   seleção na hora (`domObserver.flush()`), guarda e aplica o link nela. Teste em `tests/prompt.test.ts`.
 - **0.26.2**: o prompt em laranja (pedido do usuário: o tom do DS mais perto do laranja do Claude): tokens `--prompt`
   (o Terracota `#c26a3d` das categorias; `#e8946a` no escuro) e `--prompt-soft` no fundo.
+- **0.26.3**: **`@wylho/atrio/vite`** (`src/vite.js`, JavaScript puro porque a config do Vite roda no Node):
+  `atrioOptimizeDeps(extra?)` dá o `optimizeDeps` dos apps: o Atrio fora do pré-empacotamento e todo o editor que ele
+  usa (TipTap, ProseMirror, Yjs: `ATRIO_EDITOR_DEPS`) dentro, numa leva só. Antes, no `npm run dev` do Ideario, o
+  `@tiptap/core` vinha empacotado com uma cópia do ProseMirror e o resto vinha cru com outra, e o editor quebrava
+  ("Adding different instances of a keyed plugin"; o ⌘K não abria). A versão compilada nunca teve o problema.
+  `tests/vite.test.ts` confere que todo import do TipTap/ProseMirror/Yjs do Atrio está na lista.
 - Em uso: o Ideario (card inteiro, `NoteEditor`) e o Nodo (o nó é o card: `CardBody` + `CardPills` no mapa,
   `CardDialog` + `NoteEditor` ao abrir, com `features({ category: false, links: false })`: fotos, arquivos, câmera e
   gravador entram no `.nodo`, um zip com os anexos).
