@@ -32,7 +32,7 @@ porque ele é o hub: a pendência de um app que for peça comum vira tarefa do A
 | 10 | Nodo: estruturas e formatos do XMind que faltam | nodo | needs-triage |
 | 11 | Ideario: sync com conta Google real, cache LRU, só no Wi-Fi | ideario | needs-info |
 | 12 | Ideario: Android (backup, importar Keep, widget) | ideario | needs-triage |
-| 14 | Prompt, link na palavra e card em nova janela ([spec](../prompt-links-janela/spec.md)) | atrio, ambos | ready-for-agent |
+| 14 | Prompt, link na palavra e card em nova janela ([spec](../prompt-links-janela/spec.md)) | atrio, ambos | feita |
 | 13 | Limpar o "Próximo" do `CLAUDE.md` do Nodo (itens já feitos) | nodo | feita |
 
 ## Decisões até aqui
@@ -41,6 +41,7 @@ porque ele é o hub: a pendência de um app que for peça comum vira tarefa do A
 - [01](issues/01-unificacao-atualizada.md): `UNIFICACAO.md` com o estado de cada defeito (abertos: 6 a 11 e duas lacunas do 12).
 - [02](issues/02-card-session.md): Atrio 0.23.0, fechar espera a gravação e os atalhos param atrás do card.
 - [03](issues/03-clipboard-v2.md): Atrio 0.24.0, o card leva lembrete, status e os arquivos (até 25 MB, escolha do usuário).
+- [14](../prompt-links-janela/spec.md): Atrio 0.25.0 a 0.26.2, prompt (laranja, `<prompt>`), link na palavra com a lista de links e o card numa nova janela nos dois apps.
 - [13](issues/13-nodo-proximo.md): "Próximo" do Nodo só com o que falta.
 
 ## Ainda sem forma

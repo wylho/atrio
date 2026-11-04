@@ -1,6 +1,6 @@
 # Prompt, link na palavra e card em nova janela
 
-Status: ready-for-agent
+Status: resolved
 
 Pedido do usuário (03/11/2026), para o card dos dois apps (o mesmo card, então mora no Atrio).
 
