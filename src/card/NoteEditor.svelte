@@ -103,6 +103,12 @@
   const categories = $derived(features.category ? (host.categories?.() ?? []) : [])
   const cat = $derived(categories.find((c) => c.id === meta.categoryId))
   const extraTags = $derived([...new Set(bodyTags)].filter((t) => !meta.tags.includes(t)))
+  // O ✓ do menu de títulos: o bloco onde a seleção começa, com ou sem foco (abrir o menu tira o foco do editor, e antes
+  // o ✓ caía sempre em "Texto").
+  const menuHeading = $derived.by(() => {
+    void tick
+    return headingAt(editor)
+  })
   const active = $derived.by(() => {
     void tick
     // Só destaca a formatação enquanto se escreve.
@@ -923,7 +929,7 @@
           {#each [[0, 'Texto', ''], [1, 'Título grande', '#'], [2, 'Título médio', '##'], [3, 'Título pequeno', '###']] as const as [level, label, md] (level)}
             <DropdownMenu.Item class="menu-item" onSelect={() => editor && chooseHeading(editor, level)}>
               <span class="grow">{t(label)}</span>{#if md}<small class="menu-hint">{md}</small>{/if}
-              {#if active.heading === level}<span class="menu-check"><Check size={15} /></span>{/if}
+              {#if menuHeading === level}<span class="menu-check"><Check size={15} /></span>{/if}
             </DropdownMenu.Item>
           {/each}
         </DropdownMenu.Content>
