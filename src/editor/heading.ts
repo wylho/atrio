@@ -13,7 +13,21 @@ export function headingAt(editor: Editor | null | undefined): HeadingLevel | 0 {
 
 /** Aplica o tamanho escolhido (0 = texto). O mesmo tamanho de novo volta a texto. */
 export function chooseHeading(editor: Editor, level: HeadingLevel | 0) {
-  const chain = editor.chain().focus()
-  if (level === 0 || headingAt(editor) === level) chain.setParagraph().run()
-  else chain.setHeading({ level }).run()
+  if (level === 0 || headingAt(editor) === level) toText(editor)
+  else editor.chain().focus().setHeading({ level }).run()
+}
+
+/** Volta a texto só os títulos da seleção (e o do bloco onde ela começa): listas, citações e o resto ficam como estão. */
+function toText(editor: Editor) {
+  const { state } = editor
+  const { $from, to } = state.selection
+  const paragraph = state.schema.nodes.paragraph
+  const tr = state.tr
+  state.doc.nodesBetween(Math.max(0, $from.start() - 1), Math.max(to, $from.end()), (node, pos) => {
+    if (node.type.name !== 'heading') return true
+    tr.setNodeMarkup(pos, paragraph)
+    return false
+  })
+  if (tr.docChanged) editor.view.dispatch(tr)
+  editor.commands.focus()
 }

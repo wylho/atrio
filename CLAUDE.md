@@ -195,6 +195,8 @@ Single-context: `GLOSSARY.md` na raiz (quando houver); as decisões são as do `
   novo volta a texto (`chooseHeading`, `src/editor/heading.ts`). Antes, com a seleção passando do título para o bloco de
   baixo, o editor não via o título e escolher o tamanho de novo ainda puxava o item da lista para fora. Teste em
   `tests/prompt.test.ts`.
+- **0.26.5**: "Texto" do botão H só desfaz títulos (`toText`): com uma lista na seleção, o `setParagraph` do TipTap
+  desmanchava a lista quando não havia título para trocar. Teste com a seleção de texto do começo ao fim (a do Ctrl+A).
 - Em uso: o Ideario (card inteiro, `NoteEditor`) e o Nodo (o nó é o card: `CardBody` + `CardPills` no mapa,
   `CardDialog` + `NoteEditor` ao abrir, com `features({ category: false, links: false })`: fotos, arquivos, câmera e
   gravador entram no `.nodo`, um zip com os anexos).

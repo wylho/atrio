@@ -156,6 +156,18 @@ describe('títulos pelo botão H', () => {
     expect(kinds()).toEqual(['h1', 'h1'])
     chooseHeading(ed, 0)
     expect(kinds()).toEqual(['paragraph', 'paragraph'])
+    // "Texto" só desfaz títulos: uma lista na seleção continua lista
+    ed.commands.setContent('<h2>Links</h2><ul><li><p>um</p></li><li><p>dois</p></li></ul>')
+    // seleção de texto do começo ao fim (é o que o Ctrl+A do card faz), não a seleção do documento inteiro
+    ed.commands.setTextSelection({ from: 1, to: ed.state.doc.content.size - 1 })
+    chooseHeading(ed, 0)
+    expect(kinds()).toEqual(['paragraph', 'bulletList'])
+    expect(app.json().content[1].content).toHaveLength(2)
+    // e sem título nenhum na seleção, "Texto" não mexe em nada (antes desmanchava a lista)
+    ed.commands.setTextSelection({ from: 1, to: ed.state.doc.content.size - 1 })
+    chooseHeading(ed, 0)
+    expect(kinds()).toEqual(['paragraph', 'bulletList'])
+    expect(app.json().content[1].content).toHaveLength(2)
     unmount(app as never)
     target.remove()
   })
