@@ -132,3 +132,31 @@ describe('partsOf (o documento do editor, como projection.rs)', () => {
     expect(partsOf({ type: 'paragraph', content: [{ type: 'text', text: 'só texto' }] })).toEqual([])
   })
 })
+
+describe('títulos pelo botão H', () => {
+  it('escolher o mesmo tamanho ou Texto volta a texto, mesmo com a seleção passando do título', async () => {
+    const { chooseHeading, headingAt } = await import('../src/editor/heading')
+    const target = document.createElement('div')
+    document.body.append(target)
+    const app = mount(Harness, { target, props: { features: features(), content: '<p>Aqui estão os links</p><p>Segunda linha</p>' } }) as unknown as Ed
+    flushSync()
+    await new Promise((r) => setTimeout(r, 0))
+    const ed = app.editor()!
+    const kinds = () => app.json().content.map((n: { type: string; attrs?: { level?: number } }) => (n.type === 'heading' ? `h${n.attrs!.level}` : n.type))
+    ed.commands.setTextSelection(3)
+    chooseHeading(ed, 2)
+    expect(kinds()).toEqual(['h2', 'paragraph'])
+    // a seleção começa no título e entra na linha de baixo: o título ainda é reconhecido, e o mesmo tamanho desfaz
+    ed.commands.setTextSelection({ from: 2, to: 25 })
+    expect(headingAt(ed)).toBe(2)
+    chooseHeading(ed, 2)
+    expect(kinds()).toEqual(['paragraph', 'paragraph'])
+    // "Texto" (0) sempre volta, para qualquer tamanho e em todos os blocos da seleção
+    ed.chain().selectAll().setHeading({ level: 1 }).run()
+    expect(kinds()).toEqual(['h1', 'h1'])
+    chooseHeading(ed, 0)
+    expect(kinds()).toEqual(['paragraph', 'paragraph'])
+    unmount(app as never)
+    target.remove()
+  })
+})

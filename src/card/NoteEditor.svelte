@@ -26,6 +26,7 @@
   import { imageActions, leaveRow, placeBeside } from '../editor/media'
   import { canRecord, fmtSeconds, hasCamera, photoName, Recorder } from '../editor/capture.svelte'
   import { noteExtensions } from '../editor/extensions'
+  import { chooseHeading, headingAt } from '../editor/heading'
   import { EmojiPicker } from '../emoji'
   import MenuAt from '../ui/MenuAt.svelte'
   import MediaBlock from '../ui/MediaBlock.svelte'
@@ -109,7 +110,8 @@
     return {
       bold: !!e?.isActive('bold'), italic: !!e?.isActive('italic'),
       prompt: !!e?.isActive('prompt'), link: !!e?.isActive('link'),
-      heading: ([1, 2, 3] as const).find((level) => e?.isActive('heading', { level })) ?? 0,
+      // o título do bloco onde a seleção começa (com a seleção passando para o bloco de baixo, o título ainda conta)
+      heading: headingAt(e),
       list: !!e?.isActive('bulletList'), check: !!e?.isActive('taskList'), code: !!e?.isActive('codeBlock'),
       undo: !!editor?.can().undo(), redo: !!editor?.can().redo(),
     }
@@ -912,14 +914,15 @@
     <!-- Prompt: instrução para a IA no meio do texto (⌘⇧P). Link: na palavra escolhida (⌘K). -->
     <button onmousedown={(e) => e.preventDefault()} onclick={() => run((c) => c.togglePrompt())} aria-label={t('Prompt')} title={t('Prompt: instrução para a IA')} aria-pressed={active.prompt}><Sparkles size={18} /></button>
     <button onmousedown={(e) => e.preventDefault()} onclick={() => void inlineLink()} aria-label={t('Link na palavra')} title={t('Link na palavra')} aria-pressed={active.link}><Link size={18} /></button>
-    <!-- Títulos como no Markdown: # grande, ## médio, ### pequeno. -->
+    <!-- Títulos como no Markdown: # grande, ## médio, ### pequeno. "Texto" volta a corpo de texto; o mesmo tamanho de
+         novo também. -->
     <DropdownMenu.Root>
       <DropdownMenu.Trigger aria-label={t('Título')} title={t('Título')} aria-pressed={!!active.heading} onmousedown={(e) => e.preventDefault()}><Heading size={18} /></DropdownMenu.Trigger>
       <DropdownMenu.Portal>
         <DropdownMenu.Content class="menu" side="top" align="start" sideOffset={10} onCloseAutoFocus={(e) => e.preventDefault()}>
-          {#each [[1, 'Título grande', '#'], [2, 'Título médio', '##'], [3, 'Título pequeno', '###']] as const as [level, label, md] (level)}
-            <DropdownMenu.Item class="menu-item" onSelect={() => run((c) => c.toggleHeading({ level }))}>
-              <span class="grow">{t(label)}</span><small class="menu-hint">{md}</small>
+          {#each [[0, 'Texto', ''], [1, 'Título grande', '#'], [2, 'Título médio', '##'], [3, 'Título pequeno', '###']] as const as [level, label, md] (level)}
+            <DropdownMenu.Item class="menu-item" onSelect={() => editor && chooseHeading(editor, level)}>
+              <span class="grow">{t(label)}</span>{#if md}<small class="menu-hint">{md}</small>{/if}
               {#if active.heading === level}<span class="menu-check"><Check size={15} /></span>{/if}
             </DropdownMenu.Item>
           {/each}

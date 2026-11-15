@@ -190,6 +190,11 @@ Single-context: `GLOSSARY.md` na raiz (quando houver); as decisões são as do `
   `@tiptap/core` vinha empacotado com uma cópia do ProseMirror e o resto vinha cru com outra, e o editor quebrava
   ("Adding different instances of a keyed plugin"; o ⌘K não abria). A versão compilada nunca teve o problema.
   `tests/vite.test.ts` confere que todo import do TipTap/ProseMirror/Yjs do Atrio está na lista.
+- **0.26.4**: o título do botão H volta a texto (defeito achado pelo usuário: transformada a seleção em título, não dava
+  para voltar). O menu ganhou **Texto** no topo; o ✓ segue o bloco onde a seleção começa (`headingAt`) e o mesmo tamanho de
+  novo volta a texto (`chooseHeading`, `src/editor/heading.ts`). Antes, com a seleção passando do título para o bloco de
+  baixo, o editor não via o título e escolher o tamanho de novo ainda puxava o item da lista para fora. Teste em
+  `tests/prompt.test.ts`.
 - Em uso: o Ideario (card inteiro, `NoteEditor`) e o Nodo (o nó é o card: `CardBody` + `CardPills` no mapa,
   `CardDialog` + `NoteEditor` ao abrir, com `features({ category: false, links: false })`: fotos, arquivos, câmera e
   gravador entram no `.nodo`, um zip com os anexos).
