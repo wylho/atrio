@@ -199,6 +199,30 @@ Single-context: `GLOSSARY.md` na raiz (quando houver); as decisões são as do `
   desmanchava a lista quando não havia título para trocar. Teste com a seleção de texto do começo ao fim (a do Ctrl+A).
 - **0.26.6**: o ✓ do menu de títulos segue o bloco mesmo sem foco (`menuHeading`): abrir o menu tira o foco do editor, e o
   ✓ caía sempre em "Texto" (no print do usuário, nenhum tamanho marcado). e2e no Ideario: "título pelo botão H".
+- **0.27.0**: **varredura de defeitos do editor** (pedido do usuário; quatro frentes reproduzidas no navegador e no
+  vitest, cada correção com teste que falha sem ela). **Blocos** (`blocks.ts`, `extensions.ts`): o `CheckCascade` só
+  reage a quem remarcou a caixinha (passos `setNodeMarkup`/`setNodeAttribute`), não a mover, arrastar ou duplicar, e não
+  age no desfazer (no Nodo, desfazer "marcar o pai" desmarcava um subitem); mover, duplicar e apagar devolvem o foco ao
+  editor (o Ctrl+Z desfazia a digitação); apagar o único item tira a lista; "Transformar em" não perde fotos e anexos dos
+  itens, leva as quebras de linha para o código e mantém o tamanho do título; **Lista numerada** é forma própria; tabela
+  com uma linha/coluna desliga "Apagar linha/coluna". **Fechar o card** (`CardDialog`, `capture.svelte.ts`): o diálogo
+  fica aberto até o app tirá-lo (antes o Esc e o clique fora desmontavam na hora e a gravação, a foto entrando ou até a
+  nota nova se perdiam); parar duas vezes devolve a mesma gravação; cancelar com o microfone sendo pedido o desliga.
+  **Mídia**: anexo nunca toma o lugar da seleção, nunca entra em item, citação, célula ou linha de fotos (também ao colar
+  e soltar), e o ponto acompanha o que se digita durante a importação. **Teclado e colar**: o copiado do próprio editor
+  ou de código não vira Markdown; link e `<prompt>` contam como Markdown; lista colada num item da mesma lista entra ao
+  lado; Tab onde não dá recuar fica no texto e Shift+Tab no primeiro nível não tira da lista (`ListTabs`); H vê o título
+  com Ctrl+A; Enter do IME no título não pula. **Links**: `linkTarget` (⌘K e "+ Link…" só aceitam o que parece endereço,
+  `mailto:`/`tel:`), ⌘/Ctrl+clique nas bordas da palavra, a lista "Links" com o texto da primeira vez, a prévia fora do
+  desfazer e "Atualizar prévia" sem rede não apaga o título; foto arrastada para uma linha cheia não marca.
+  **Markdown** (`atrio::markdown`, o arquivo do Nodo e o MCP do Ideario): lista, código e citação numa célula de tabela
+  viram texto da célula (antes sumiam ou rachavam a linha); marcas coladas a letra ou pontuação e marcas vizinhas voltam
+  certas (pilha de marcas; o vizinho vira entidade `&#NN;` quando o CommonMark não abriria/fecharia; itálico encostado
+  no negrito sai `_x_`); linha divisória e título dentro de item; quebras no começo, no fim e seguidas (`<br>`); espaço
+  antes da quebra, tab no começo, `- \[ \]`, `&`/`<`/`>` no endereço e NBSP. O gerador do proptest cobre trechos
+  colados, quebras e espaços dentro das marcas. Testes em `tests/blocks.test.ts`, `media.test.ts`, `keys.test.ts` e na
+  crate. Fica de fora: a prévia em TypeScript (`markdown.ts`) ainda difere da do Rust em casos raros (só a prévia do Nodo
+  no navegador).
 - Em uso: o Ideario (card inteiro, `NoteEditor`) e o Nodo (o nó é o card: `CardBody` + `CardPills` no mapa,
   `CardDialog` + `NoteEditor` ao abrir, com `features({ category: false, links: false })`: fotos, arquivos, câmera e
   gravador entram no `.nodo`, um zip com os anexos).

@@ -26,12 +26,22 @@ const EMPTY_PARAGRAPH: &str = "&nbsp;";
 /// Marca do cartão de link no texto do link.
 const LINK: &str = "🔗";
 
-/// Endereço como destino de link (entre `<>` se tiver espaço ou parênteses).
+/// Endereço como destino de link (entre `<>` se tiver espaço ou parênteses). O Markdown lê entidades e barras
+/// invertidas também no endereço: `&` que formaria uma entidade vira `&amp;` e a barra vai dobrada.
 fn link_dest(url: &str) -> String {
+    let chars: Vec<char> = url.chars().collect();
+    let mut safe = String::with_capacity(url.len());
+    for (i, c) in chars.iter().enumerate() {
+        match c {
+            '&' if entity_at(&chars[i..]) => safe.push_str("&amp;"),
+            '\\' => safe.push_str("\\\\"),
+            _ => safe.push(*c),
+        }
+    }
     if url.contains([' ', '(', ')', '<', '>']) {
-        format!("<{}>", url.replace('<', "%3C").replace('>', "%3E"))
+        format!("<{}>", safe.replace('<', "\\<").replace('>', "\\>"))
     } else {
-        url.to_string()
+        safe
     }
 }
 const NBSP: &str = "\u{a0}";
@@ -115,7 +125,7 @@ fn block(node: &Value, name: &dyn Fn(&str) -> Option<String>, alt: bool) -> Stri
                 .join("\n")
         }
         "horizontalRule" => "---".into(),
-        "table" => table(node),
+        "table" => table(node, name),
         "bulletList" | "orderedList" | "taskList" => list(node, name, alt),
         "codeBlock" => code(node),
         "noteImage" => image(node, name),
@@ -219,7 +229,10 @@ fn list(node: &Value, name: &dyn Fn(&str) -> Option<String>, alt: bool) -> Strin
                         .and_then(Value::as_i64)
                         .unwrap_or(1)
                         != 1;
-                if j > 0 && (k == "paragraph" || late_start) {
+                // Linha divisória logo depois do texto faria dele um título (`a` + `---`); a tabela também precisa.
+                if j > 0
+                    && (k == "paragraph" || k == "horizontalRule" || k == "table" || late_start)
+                {
                     parts.push(String::new());
                 }
                 parts.push(text);
@@ -278,7 +291,7 @@ fn wrap_of(n: &Value) -> Wrap {
 }
 
 /// Texto com negrito/itálico, prompt (`<prompt>…</prompt>`), link na palavra (`[palavra](endereço)`) e quebras de
-/// linha. Trechos seguidos com o mesmo prompt ou o mesmo link saem num embrulho só; espaços nas pontas ficam de fora.
+/// linha. Trechos seguidos com o mesmo prompt ou o mesmo link saem num embrulho só.
 fn inline(nodes: &[Value], heading: bool) -> String {
     let mut out = String::new();
     let mut line_start = true;
@@ -297,15 +310,8 @@ fn inline(nodes: &[Value], heading: bool) -> String {
         }
         let mut inner = String::new();
         plain_inline(group, heading, &mut false, &mut inner);
-        let core = inner.trim_matches(' ');
-        if core.is_empty() {
-            plain_inline(group, heading, &mut line_start, &mut out);
-            continue;
-        }
-        let lead = &inner[..inner.len() - inner.trim_start_matches(' ').len()];
-        let trail = &inner[inner.trim_end_matches(' ').len()..];
-        out.push_str(&esc(lead, line_start, heading));
-        let mut piece = core.to_string();
+        // Os espaços nas pontas ficam dentro do prompt ou do link (o texto de fora não começa nem acaba ali).
+        let mut piece = inner;
         if let Some(href) = &wrap.href {
             // "!" logo antes do "[" faria uma foto
             if out.ends_with('!') && !out.ends_with("\\!") {
@@ -318,72 +324,315 @@ fn inline(nodes: &[Value], heading: bool) -> String {
             piece = format!("<prompt>{piece}</prompt>");
         }
         out.push_str(&piece);
-        out.push_str(trail);
         line_start = false;
+    }
+    // espaço no fim do parágrafo some no Markdown
+    if out.ends_with([' ', '\t']) {
+        encode_edge(&mut out, false);
     }
     out
 }
 
-/// Os nós de texto com as marcas simples (negrito, itálico, tachado, código). Espaços nas pontas de um trecho marcado
-/// ficam de fora das marcas (`** a**` não seria negrito).
+/// Marca que abre e fecha com um delimitador (o código é um trecho inteiro, não entra na pilha).
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
+enum Mark {
+    Strike,
+    Bold,
+    Italic,
+}
+
+/// Pedaço do Markdown de uma linha de texto: texto já escapado, um delimitador (marca e par) ou a quebra de linha
+/// (`true` = linha nova; `false` = `<br>`).
+enum Tok {
+    Text(String),
+    Open(Mark, usize),
+    Close(Mark, usize),
+    Line(bool),
+}
+
+/// Trecho de texto com as marcas dele, ou uma quebra de linha.
+enum Seg {
+    Text(String, Vec<Mark>, bool),
+    Break,
+}
+
+fn is_ws(c: Option<char>) -> bool {
+    c.map_or(true, char::is_whitespace)
+}
+
+/// Pontuação para o CommonMark (a ASCII e os símbolos e sinais do Unicode).
+fn is_punct(c: Option<char>) -> bool {
+    c.is_some_and(|c| c.is_ascii_punctuation() || (!c.is_alphanumeric() && !c.is_whitespace()))
+}
+
+/// O caractere como entidade numérica: o Markdown lê de volta o mesmo caractere, mas para as regras de abrir e
+/// fechar negrito ele conta como pontuação (`&` e `;`).
+fn entity(c: char) -> String {
+    format!("&#{};", c as u32)
+}
+
+/// Troca o primeiro (ou o último) caractere de um texto por entidade, se for letra ou espaço (o que vem escapado já é
+/// pontuação e fica como está).
+fn encode_edge(s: &mut String, first: bool) -> bool {
+    let c = if first {
+        s.chars().next()
+    } else {
+        s.chars().last()
+    };
+    match c {
+        Some(c) if !is_punct(Some(c)) => {
+            if first {
+                s.replace_range(..c.len_utf8(), &entity(c));
+            } else {
+                let at = s.len() - c.len_utf8();
+                s.replace_range(at.., &entity(c));
+            }
+            true
+        }
+        _ => false,
+    }
+}
+
+/// Os nós de texto com as marcas simples (negrito, itálico, tachado, código). Uma marca que continua no trecho
+/// seguinte fica aberta (`~~comprar **leite** hoje~~`); onde as regras do CommonMark não deixariam o delimitador abrir
+/// ou fechar (colado numa letra de um lado e numa pontuação do outro, ou num espaço), o vizinho vira entidade. Na
+/// quebra de linha todas as marcas fecham e reabrem depois.
 fn plain_inline(nodes: &[Value], heading: bool, line_start: &mut bool, out: &mut String) {
+    let mut segs: Vec<Seg> = Vec::new();
+    // Trechos seguidos com as mesmas marcas são um só (dois códigos colados viram um só, como no editor).
+    let push = |segs: &mut Vec<Seg>, piece: &str, marks: &Vec<Mark>, code: bool| {
+        if let Some(Seg::Text(t, ms, c)) = segs.last_mut() {
+            if ms == marks && *c == code {
+                t.push_str(piece);
+                return;
+            }
+        }
+        segs.push(Seg::Text(piece.to_string(), marks.clone(), code));
+    };
     for n in nodes {
         match kind(n) {
-            // título é uma linha só: a quebra fica como <br>
-            "hardBreak" if heading => out.push_str("<br>"),
-            "hardBreak" => {
-                out.push('\n');
-                *line_start = true;
-            }
+            "hardBreak" => segs.push(Seg::Break),
             "text" => {
                 let text = n.get("text").and_then(Value::as_str).unwrap_or("");
-                let marks: Vec<&str> = n
+                let names: Vec<&str> = n
                     .get("marks")
                     .and_then(Value::as_array)
                     .into_iter()
                     .flatten()
                     .filter_map(|m| m.get("type").and_then(Value::as_str))
                     .collect();
-                let emph = match (marks.contains(&"bold"), marks.contains(&"italic")) {
-                    (true, true) => "***",
-                    (true, false) => "**",
-                    (false, true) => "*",
-                    (false, false) => "",
-                };
-                let strike = if marks.contains(&"strike") { "~~" } else { "" };
-                let code = marks.contains(&"code");
+                let mut marks = Vec::new();
+                for (name, m) in [
+                    ("strike", Mark::Strike),
+                    ("bold", Mark::Bold),
+                    ("italic", Mark::Italic),
+                ] {
+                    if names.contains(&name) {
+                        marks.push(m);
+                    }
+                }
+                let code = names.contains(&"code");
                 // Linhas dentro do trecho (texto colado com "\n"): cada uma como quebra de linha.
                 for (k, piece) in text.split('\n').enumerate() {
                     if k > 0 {
-                        out.push('\n');
-                        *line_start = true;
-                    }
-                    let core = piece.trim_matches(' ');
-                    if (emph.is_empty() && strike.is_empty() && !code) || core.is_empty() {
-                        out.push_str(&esc(piece, *line_start, heading));
-                    } else {
-                        let lead = &piece[..piece.len() - piece.trim_start_matches(' ').len()];
-                        let trail = &piece[piece.trim_end_matches(' ').len()..];
-                        out.push_str(&esc(lead, *line_start, heading));
-                        out.push_str(strike);
-                        out.push_str(emph);
-                        out.push_str(&if code {
-                            code_span(core)
-                        } else {
-                            esc(core, false, heading)
-                        });
-                        out.push_str(emph);
-                        out.push_str(strike);
-                        out.push_str(trail);
+                        segs.push(Seg::Break);
                     }
                     if !piece.is_empty() {
-                        *line_start = false;
+                        push(&mut segs, piece, &marks, code);
                     }
                 }
             }
             _ => {}
         }
     }
+
+    // Pedaços, com a pilha das marcas abertas.
+    let mut toks: Vec<Tok> = Vec::new();
+    let mut stack: Vec<(Mark, usize)> = Vec::new();
+    let mut pairs = 0usize;
+    let mut esc_start = *line_start;
+    let mut has_text = !*line_start;
+    let close_all = |stack: &mut Vec<(Mark, usize)>, toks: &mut Vec<Tok>| {
+        while let Some((m, id)) = stack.pop() {
+            toks.push(Tok::Close(m, id));
+        }
+    };
+    for (i, seg) in segs.iter().enumerate() {
+        match seg {
+            Seg::Break => {
+                close_all(&mut stack, &mut toks);
+                let next_text = matches!(segs.get(i + 1), Some(Seg::Text(..)));
+                let newline = !heading && has_text && next_text;
+                toks.push(Tok::Line(newline));
+                if newline {
+                    esc_start = true;
+                    has_text = false;
+                }
+            }
+            Seg::Text(text, marks, code) => {
+                // Fecha do topo até a primeira marca aberta que este trecho não tem.
+                if let Some(k) = stack.iter().position(|(m, _)| !marks.contains(m)) {
+                    while stack.len() > k {
+                        if let Some((m, id)) = stack.pop() {
+                            toks.push(Tok::Close(m, id));
+                        }
+                    }
+                }
+                // Abre as que faltam, primeiro as que duram mais (ficam por fora).
+                let lasting = |m: Mark| {
+                    segs[i..]
+                        .iter()
+                        .take_while(|s| matches!(s, Seg::Text(_, ms, _) if ms.contains(&m)))
+                        .count()
+                };
+                let mut new: Vec<Mark> = marks
+                    .iter()
+                    .copied()
+                    .filter(|m| !stack.iter().any(|(o, _)| o == m))
+                    .collect();
+                new.sort_by_key(|m| (std::cmp::Reverse(lasting(*m)), *m));
+                for m in new {
+                    toks.push(Tok::Open(m, pairs));
+                    stack.push((m, pairs));
+                    pairs += 1;
+                    esc_start = false;
+                }
+                let piece = if *code {
+                    code_span(text)
+                } else {
+                    esc(text, esc_start, heading)
+                };
+                toks.push(Tok::Text(piece));
+                esc_start = false;
+                has_text = true;
+            }
+        }
+    }
+    close_all(&mut stack, &mut toks);
+
+    // O itálico que está dentro de um negrito, tem um dentro ou encosta nele vai com `_`: `*` e `**` juntos podem
+    // se casar errado (um `*` colado em pontuação dos dois lados abre e fecha ao mesmo tempo, e fecharia o negrito
+    // de fora).
+    let mut under = vec![false; pairs];
+    let at = |want: &dyn Fn(&Tok) -> bool| toks.iter().position(want);
+    for (id, slot) in under.iter_mut().enumerate() {
+        let (Some(open), Some(close)) = (
+            at(&|t| matches!(t, Tok::Open(Mark::Italic, i) if *i == id)),
+            at(&|t| matches!(t, Tok::Close(Mark::Italic, i) if *i == id)),
+        ) else {
+            continue;
+        };
+        let bold = |t: &Tok| matches!(t, Tok::Open(Mark::Bold, _) | Tok::Close(Mark::Bold, _));
+        let inside = toks[open..=close].iter().any(bold);
+        let around = toks[..open]
+            .iter()
+            .filter(|t| matches!(t, Tok::Open(Mark::Bold, _)))
+            .count()
+            > toks[..open]
+                .iter()
+                .filter(|t| matches!(t, Tok::Close(Mark::Bold, _)))
+                .count();
+        let touching = [open.checked_sub(1), Some(close + 1)]
+            .into_iter()
+            .flatten()
+            .any(|j| toks.get(j).is_some_and(bold));
+        *slot = inside || around || touching;
+    }
+    let delim = |t: &Tok, under: &[bool]| -> Option<(&'static str, bool)> {
+        match t {
+            Tok::Open(m, id) | Tok::Close(m, id) => Some((
+                match m {
+                    Mark::Strike => "~~",
+                    Mark::Bold => "**",
+                    Mark::Italic if under[*id] => "_",
+                    Mark::Italic => "*",
+                },
+                matches!(t, Tok::Open(..)),
+            )),
+            _ => None,
+        }
+    };
+    // Regras de abrir e fechar do CommonMark: onde falham, o vizinho vira entidade.
+    let first = |t: &Tok, under: &[bool]| match t {
+        Tok::Text(s) => s.chars().next(),
+        Tok::Line(nl) => Some(if *nl { '\n' } else { '<' }),
+        _ => delim(t, under).and_then(|(d, _)| d.chars().next()),
+    };
+    let last = |t: &Tok, under: &[bool]| match t {
+        Tok::Text(s) => s.chars().last(),
+        Tok::Line(nl) => Some(if *nl { '\n' } else { '>' }),
+        _ => delim(t, under).and_then(|(d, _)| d.chars().last()),
+    };
+    for _ in 0..4 {
+        let mut changed = false;
+        for i in 0..toks.len() {
+            let Some((d, open)) = delim(&toks[i], &under) else {
+                continue;
+            };
+            let p = if i == 0 {
+                out.chars().last()
+            } else {
+                last(&toks[i - 1], &under)
+            };
+            let n = toks.get(i + 1).and_then(|t| first(t, &under));
+            let alnum = |c: Option<char>| !is_ws(c) && !is_punct(c);
+            // (codificar o anterior, codificar o seguinte)
+            let fix = if open {
+                if is_ws(n) {
+                    (false, true)
+                } else if alnum(p) && (is_punct(n) || d == "_") {
+                    (true, false)
+                } else {
+                    (false, false)
+                }
+            } else if is_ws(p) && p.is_some() {
+                (true, false)
+            } else if alnum(n) && (is_punct(p) || d == "_") {
+                (false, true)
+            } else {
+                (false, false)
+            };
+            if fix.0 {
+                changed |= if i == 0 {
+                    // o anterior já está no texto de fora (só letra ou espaço cru vira entidade)
+                    out.chars().last().is_some_and(|c| !is_punct(Some(c)))
+                        && encode_edge(out, false)
+                } else if let Tok::Text(s) = &mut toks[i - 1] {
+                    encode_edge(s, false)
+                } else {
+                    false
+                };
+            }
+            if fix.1 {
+                if let Some(Tok::Text(s)) = toks.get_mut(i + 1) {
+                    changed |= encode_edge(s, true);
+                }
+            }
+        }
+        if !changed {
+            break;
+        }
+    }
+
+    for t in &toks {
+        match t {
+            Tok::Text(s) => out.push_str(s),
+            Tok::Line(true) => {
+                // espaço no fim da linha some no Markdown
+                if out.ends_with([' ', '\t']) {
+                    encode_edge(out, false);
+                }
+                out.push('\n');
+            }
+            Tok::Line(false) => out.push_str("<br>"),
+            _ => {
+                if let Some((d, _)) = delim(t, &under) {
+                    out.push_str(d);
+                }
+            }
+        }
+    }
+    *line_start = esc_start && !has_text;
 }
 
 /// `código` no meio do texto: a cerca de crases é maior que qualquer sequência de crases de dentro; com crase nas
@@ -391,27 +640,75 @@ fn plain_inline(nodes: &[Value], heading: bool, line_start: &mut bool, out: &mut
 fn code_span(text: &str) -> String {
     let longest = text.split(|c| c != '`').map(str::len).max().unwrap_or(0);
     let fence = "`".repeat(longest + 1);
-    if text.starts_with('`') || text.ends_with('`') {
+    // O Markdown tira um espaço de cada ponta quando há nas duas (e o trecho não é só espaço): repõe.
+    let spaced = text.starts_with(' ') && text.ends_with(' ') && !text.trim_matches(' ').is_empty();
+    if text.starts_with('`') || text.ends_with('`') || spaced {
         format!("{fence} {text} {fence}")
     } else {
         format!("{fence}{text}{fence}")
     }
 }
 
+/// As linhas de uma célula da tabela. A célula do Markdown é uma linha só e não leva blocos: uma lista, um código
+/// ou uma citação dentro dela viram linhas de texto (`- item`, `- [x] feito`, o código em `trechos`), separadas por
+/// `<br>`. A estrutura vira texto, mas nada do que está escrito some. Fotos, anexos e cartões vão como são.
+fn cell_lines(node: &Value, name: &dyn Fn(&str) -> Option<String>, out: &mut Vec<String>) {
+    match kind(node) {
+        "bulletList" | "orderedList" | "taskList" => {
+            let start = node
+                .get("attrs")
+                .and_then(|a| a.get("start"))
+                .and_then(Value::as_i64)
+                .unwrap_or(1);
+            for (i, item) in children(node).iter().enumerate() {
+                let marker = match kind(node) {
+                    "orderedList" => format!("{}. ", start + i as i64),
+                    "taskList" if item["attrs"]["checked"].as_bool() == Some(true) => {
+                        "- \\[x\\] ".into()
+                    }
+                    "taskList" => "- \\[ \\] ".into(),
+                    _ => "- ".into(),
+                };
+                let mut inner = Vec::new();
+                for c in children(item) {
+                    cell_lines(c, name, &mut inner);
+                }
+                let mut inner = inner.into_iter();
+                out.push(format!("{marker}{}", inner.next().unwrap_or_default()));
+                out.extend(inner);
+            }
+        }
+        "blockquote" => {
+            for c in children(node) {
+                cell_lines(c, name, out);
+            }
+        }
+        "codeBlock" => {
+            let text: String = children(node)
+                .iter()
+                .filter_map(|t| t.get("text").and_then(Value::as_str))
+                .collect();
+            out.extend(text.split('\n').filter(|l| !l.is_empty()).map(code_span));
+        }
+        "horizontalRule" => {}
+        "noteImage" | "imageRow" | "noteFile" | "linkCard" => out.push(block(node, name, false)),
+        _ => out.push(inline(children(node), true)),
+    }
+}
+
 /// Tabela do GitHub. A primeira linha é o cabeçalho; cada célula é uma linha só (quebra = `<br>`, `|` escapado).
-fn table(node: &Value) -> String {
+fn table(node: &Value, name: &dyn Fn(&str) -> Option<String>) -> String {
     let rows: Vec<Vec<String>> = children(node)
         .iter()
         .map(|row| {
             children(row)
                 .iter()
                 .map(|cell| {
-                    let text = children(cell)
-                        .iter()
-                        .map(|p| inline(children(p), true))
-                        .collect::<Vec<_>>()
-                        .join("<br>");
-                    text.replace('|', "\\|")
+                    let mut lines = Vec::new();
+                    for c in children(cell) {
+                        cell_lines(c, name, &mut lines);
+                    }
+                    lines.join("<br>").replace('|', "\\|")
                 })
                 .collect()
         })
@@ -437,9 +734,15 @@ fn esc(text: &str, line_start: bool, heading: bool) -> String {
     let mut i = 0;
     while i < chars.len() {
         let c = chars[i];
-        if at_start && c == ' ' {
-            // espaço no começo da linha some no Markdown: guarda como entidade
-            out.push_str("&#32;");
+        if c == '\r' {
+            // o Markdown leria como fim de linha
+            out.push_str(&entity(c));
+            i += 1;
+            continue;
+        }
+        if at_start && (c == ' ' || c == '\t') {
+            // espaço (ou tab) no começo da linha some no Markdown (ou abre um bloco de código): guarda como entidade
+            out.push_str(&entity(c));
             i += 1;
             continue;
         }
@@ -563,6 +866,8 @@ enum Frame {
     Item {
         task: Option<bool>,
         content: Vec<Value>,
+        /// O item é um "- [ ]" sem texto, escrito assim (o Markdown não lê como tarefa; `\[ \]` é texto).
+        raw_box: Option<bool>,
     },
     Code {
         lang: String,
@@ -592,14 +897,18 @@ enum Piece {
 pub fn from_markdown(md: &str) -> Value {
     let mut stack: Vec<Frame> = vec![Frame::Doc(Vec::new())];
     let mut marks: Vec<&'static str> = Vec::new();
-    for ev in Parser::new_ext(
+    for (ev, range) in Parser::new_ext(
         md,
         Options::ENABLE_TASKLISTS | Options::ENABLE_STRIKETHROUGH | Options::ENABLE_TABLES,
-    ) {
+    )
+    .into_offset_iter()
+    {
         match ev {
             Event::Start(tag) => match tag {
                 Tag::Paragraph => stack.push(Frame::Paragraph(Vec::new())),
                 Tag::Heading { level, .. } => {
+                    // título num item "apertado": fecha o texto do item antes (senão vai junto)
+                    close_implicit(&mut stack);
                     stack.push(Frame::Heading((level as u8).clamp(1, 3), Vec::new()))
                 }
                 Tag::BlockQuote(_) => {
@@ -624,6 +933,7 @@ pub fn from_markdown(md: &str) -> Value {
                 Tag::Item => stack.push(Frame::Item {
                     task: None,
                     content: Vec::new(),
+                    raw_box: raw_box(md.get(range).unwrap_or("")),
                 }),
                 Tag::CodeBlock(k) => {
                     close_implicit(&mut stack);
@@ -716,11 +1026,14 @@ pub fn from_markdown(md: &str) -> Value {
                 TagEnd::Strikethrough => remove_last(&mut marks, "strike"),
                 TagEnd::Item => {
                     close_implicit(&mut stack);
-                    if let Some(Frame::Item { task, content }) =
-                        pop_if(&mut stack, |f| matches!(f, Frame::Item { .. }))
+                    if let Some(Frame::Item {
+                        task,
+                        content,
+                        raw_box,
+                    }) = pop_if(&mut stack, |f| matches!(f, Frame::Item { .. }))
                     {
                         if let Some(Frame::List { items, .. }) = stack.last_mut() {
-                            items.push((task, content));
+                            items.push(item_done(task, content, raw_box));
                         }
                     }
                 }
@@ -787,6 +1100,12 @@ pub fn from_markdown(md: &str) -> Value {
                 close_implicit(&mut stack);
                 push_blocks(&mut stack, vec![json!({"type": "horizontalRule"})]);
             }
+            // parágrafo que é só quebra de linha: o Markdown lê `<br>` sozinho na linha como bloco de HTML
+            Event::Html(t) if br_count(&t) > 0 => {
+                for _ in 0..br_count(&t) {
+                    push_piece(&mut stack, Piece::Break);
+                }
+            }
             Event::Html(t) => {
                 let t = t.trim_end_matches('\n').to_string();
                 push_text(&mut stack, &t, &marks)
@@ -827,9 +1146,13 @@ pub fn from_markdown(md: &str) -> Value {
                     vec![json!({"type": "table", "content": rows})]
                 }
                 Some(Frame::List { ordered, items }) => vec![list_node(ordered, items)],
-                Some(Frame::Item { task, content }) => {
+                Some(Frame::Item {
+                    task,
+                    content,
+                    raw_box,
+                }) => {
                     if let Some(Frame::List { items, .. }) = stack.last_mut() {
-                        items.push((task, content));
+                        items.push(item_done(task, content, raw_box));
                     }
                     vec![]
                 }
@@ -864,15 +1187,26 @@ fn quote_node(content: Vec<Value>) -> Value {
     json!({"type": "blockquote", "content": content})
 }
 
-/// Célula da tabela: um parágrafo com o texto (cabeçalho na primeira linha).
+/// Célula da tabela: o texto num parágrafo (cabeçalho na primeira linha); fotos e anexos da célula, os blocos deles.
 fn cell_node(header: bool, pieces: &[Piece]) -> Value {
-    let nodes = inline_nodes(pieces);
-    let p = if nodes.is_empty() {
-        json!({"type": "paragraph"})
+    let content = paragraph_blocks(pieces.to_vec());
+    json!({"type": if header { "tableHeader" } else { "tableCell" }, "attrs": {"colspan": 1, "rowspan": 1}, "content": content})
+}
+
+/// Quantos `<br>` há num bloco de HTML feito só deles (0 se há outra coisa).
+fn br_count(html: &str) -> usize {
+    let t: String = html
+        .chars()
+        .filter(|c| !c.is_whitespace())
+        .collect::<String>()
+        .to_ascii_lowercase()
+        .replace("<br/>", "<br>");
+    let n = t.matches("<br>").count();
+    if n > 0 && t.len() == n * 4 {
+        n
     } else {
-        json!({"type": "paragraph", "content": nodes})
-    };
-    json!({"type": if header { "tableHeader" } else { "tableCell" }, "attrs": {"colspan": 1, "rowspan": 1}, "content": [p]})
+        0
+    }
 }
 
 fn is_br(html: &str) -> bool {
@@ -1059,22 +1393,25 @@ fn paragraph_blocks(pieces: Vec<Piece>) -> Vec<Value> {
     let mut out = Vec::new();
     let mut text: Vec<Piece> = Vec::new();
     let mut images: Vec<String> = Vec::new();
-    let flush_text = |text: &mut Vec<Piece>, out: &mut Vec<Value>| {
-        // quebras nas pontas (em volta de uma foto) não contam
-        while matches!(text.last(), Some(Piece::Break)) {
-            text.pop();
-        }
-        while matches!(text.first(), Some(Piece::Break)) {
-            text.remove(0);
-        }
-        let blank = text
-            .iter()
-            .all(|p| matches!(p, Piece::Text(t, ..) if t.trim().is_empty()));
-        if !text.is_empty() && !blank {
-            out.push(json!({"type": "paragraph", "content": inline_nodes(text)}));
-        }
-        text.clear();
-    };
+    // Quebras de linha em volta de uma foto, um anexo ou um cartão não contam (separam o texto do bloco); as do
+    // texto, sim (`<br>` no começo ou no fim do parágrafo).
+    let mut after_block = false;
+    let flush_text =
+        |text: &mut Vec<Piece>, out: &mut Vec<Value>, before_block: bool, after_block: bool| {
+            while before_block && matches!(text.last(), Some(Piece::Break)) {
+                text.pop();
+            }
+            while after_block && matches!(text.first(), Some(Piece::Break)) {
+                text.remove(0);
+            }
+            let blank = text
+                .iter()
+                .all(|p| matches!(p, Piece::Text(t, ..) if t.trim().is_empty()));
+            if !text.is_empty() && !blank {
+                out.push(json!({"type": "paragraph", "content": inline_nodes(text)}));
+            }
+            text.clear();
+        };
     let flush_images = |images: &mut Vec<String>, out: &mut Vec<Value>| {
         for chunk in images.chunks(4) {
             let imgs: Vec<Value> = chunk
@@ -1102,19 +1439,22 @@ fn paragraph_blocks(pieces: Vec<Piece>) -> Vec<Value> {
         match p {
             Piece::Image(h) => {
                 if !only_space(&text) {
-                    flush_text(&mut text, &mut out);
+                    flush_text(&mut text, &mut out, true, after_block);
                 }
                 text.clear();
                 images.push(h);
+                after_block = true;
             }
             Piece::File(h) => {
                 flush_images(&mut images, &mut out);
-                flush_text(&mut text, &mut out);
+                flush_text(&mut text, &mut out, true, after_block);
                 out.push(json!({"type": "noteFile", "attrs": {"hash": h}}));
+                after_block = true;
             }
             Piece::Link(url, title) => {
                 flush_images(&mut images, &mut out);
-                flush_text(&mut text, &mut out);
+                flush_text(&mut text, &mut out, true, after_block);
+                after_block = true;
                 let mut attrs = json!({"url": url});
                 if !title.is_empty() {
                     attrs["title"] = json!(title);
@@ -1132,7 +1472,7 @@ fn paragraph_blocks(pieces: Vec<Piece>) -> Vec<Value> {
         }
     }
     flush_images(&mut images, &mut out);
-    flush_text(&mut text, &mut out);
+    flush_text(&mut text, &mut out, false, after_block);
     if out.is_empty() {
         out.push(json!({"type": "paragraph"}));
     }
@@ -1144,7 +1484,6 @@ fn inline_nodes(pieces: &[Piece]) -> Vec<Value> {
     for p in pieces {
         match p {
             Piece::Text(t, marks, link) => {
-                let t = t.replace(NBSP, " ");
                 let mut node = json!({"type": "text", "text": t});
                 let mut ms: Vec<&str> = marks.clone();
                 if link.is_some() {
@@ -1173,32 +1512,36 @@ fn inline_nodes(pieces: &[Piece]) -> Vec<Value> {
     out
 }
 
+/// Linha do item no Markdown, sem o marcador: `[ ]` ou `[x]` sozinhos são a caixinha de um item de checklist sem
+/// texto (o Markdown não lê assim; escapado, `\[ \]`, é o texto de um item comum).
+fn raw_box(src: &str) -> Option<bool> {
+    let line = src.lines().next().unwrap_or("").trim_start();
+    let rest = line.strip_prefix(['-', '*', '+']).unwrap_or_else(|| {
+        line.trim_start_matches(|c: char| c.is_ascii_digit())
+            .trim_start_matches(['.', ')'])
+    });
+    match rest.trim() {
+        "[ ]" => Some(false),
+        "[x]" | "[X]" => Some(true),
+        _ => None,
+    }
+}
+
+/// O item pronto: um "- [ ]" sem texto vira o item de checklist vazio.
+fn item_done(
+    task: Option<bool>,
+    content: Vec<Value>,
+    raw_box: Option<bool>,
+) -> (Option<bool>, Vec<Value>) {
+    let only_box = matches!(content.as_slice(), [p] if kind(p) == "paragraph"
+        && matches!(children(p).iter().filter_map(|t| t.get("text").and_then(Value::as_str)).collect::<String>().as_str(), "[ ]" | "[x]" | "[X]"));
+    match (task, raw_box) {
+        (None, Some(done)) if only_box => (Some(done), vec![json!({"type": "paragraph"})]),
+        _ => (task, content),
+    }
+}
+
 fn list_node(ordered: Option<u64>, items: Vec<(Option<bool>, Vec<Value>)>) -> Value {
-    // "- [ ]" sem texto não é lido como checklist pelo Markdown: é um item com o texto "[ ]".
-    let items: Vec<(Option<bool>, Vec<Value>)> = items
-        .into_iter()
-        .map(|(done, content)| {
-            let bare = match content.as_slice() {
-                [p] if kind(p) == "paragraph" && children(p).iter().all(|t| kind(t) == "text") => {
-                    match children(p)
-                        .iter()
-                        .filter_map(|t| t.get("text").and_then(Value::as_str))
-                        .collect::<String>()
-                        .as_str()
-                    {
-                        "[ ]" => Some(false),
-                        "[x]" | "[X]" => Some(true),
-                        _ => None,
-                    }
-                }
-                _ => None,
-            };
-            match (done, bare) {
-                (None, Some(d)) => (Some(d), vec![json!({"type": "paragraph"})]),
-                other => (other.0, content),
-            }
-        })
-        .collect();
     let task = items.iter().any(|(t, _)| t.is_some());
     let items: Vec<Value> = items
         .into_iter()
@@ -1470,6 +1813,266 @@ mod tests {
         assert_eq!(
             from_markdown("- [ ]"),
             json!({"type":"doc","content":[{"type":"taskList","content":[{"type":"taskItem","attrs":{"checked":false},"content":[{"type":"paragraph"}]}]}]})
+        );
+    }
+
+    fn tx(s: &str) -> Value {
+        json!({"type":"text","text":s})
+    }
+    fn mk(s: &str, marks: &[&str]) -> Value {
+        json!({"type":"text","text":s,"marks": marks.iter().map(|k| json!({"type":k})).collect::<Vec<_>>()})
+    }
+    fn para(c: Vec<Value>) -> Value {
+        json!({"type":"paragraph","content":c})
+    }
+    fn one(c: Vec<Value>) -> Value {
+        json!({"type":"doc","content":c})
+    }
+    fn br() -> Value {
+        json!({"type":"hardBreak"})
+    }
+    /// Ida e volta igual; devolve o Markdown para conferir a forma.
+    fn same(label: &str, doc: Value) -> String {
+        let md = to_markdown(&doc, &names);
+        assert_eq!(
+            from_markdown(&md),
+            crate::canon::canon(&doc),
+            "{label}: {md:?}"
+        );
+        md
+    }
+
+    #[test]
+    fn marks_glued_to_letters_and_punctuation_come_back() {
+        same(
+            "negrito com dois-pontos",
+            one(vec![para(vec![mk("Nota:", &["bold"]), tx("texto")])]),
+        );
+        same(
+            "letra antes de negrito com %",
+            one(vec![para(vec![tx("dez"), mk("%", &["bold"])])]),
+        );
+        same(
+            "tachado com !",
+            one(vec![para(vec![mk("feito!", &["strike"]), tx("ok")])]),
+        );
+        same(
+            "itálico com aspas",
+            one(vec![para(vec![
+                tx("ver "),
+                mk("“livro”", &["italic"]),
+                tx("s"),
+            ])]),
+        );
+        same(
+            "negrito começando com *",
+            one(vec![para(vec![tx("x"), mk("*a", &["bold"])])]),
+        );
+        same(
+            "negrito e itálico vizinhos",
+            one(vec![para(vec![mk("a", &["bold"]), mk("b", &["italic"])])]),
+        );
+        same(
+            "itálico e negrito vizinhos",
+            one(vec![para(vec![mk("a", &["italic"]), mk("b", &["bold"])])]),
+        );
+        same(
+            "negrito e negrito+itálico",
+            one(vec![para(vec![
+                mk("a", &["bold"]),
+                mk("b", &["bold", "italic"]),
+            ])]),
+        );
+        same(
+            "negrito+código ao lado",
+            one(vec![para(vec![tx("um"), mk("dois", &["bold", "code"])])]),
+        );
+        same(
+            "tachado e tachado+negrito",
+            one(vec![para(vec![
+                mk("um", &["strike"]),
+                mk("dois", &["strike", "bold"]),
+            ])]),
+        );
+        same(
+            "negrito no meio da palavra",
+            one(vec![para(vec![tx("pre"), mk("fix", &["bold"]), tx("o")])]),
+        );
+        same(
+            "itálico no meio da palavra",
+            one(vec![para(vec![tx("pre"), mk("fix", &["italic"]), tx("o")])]),
+        );
+        same(
+            "código e negrito",
+            one(vec![para(vec![mk("x", &["code"]), mk("y", &["bold"])])]),
+        );
+        // O espaço dentro de uma marca de fora continua marcado.
+        let md = same(
+            "espaços dentro do tachado",
+            one(vec![para(vec![
+                mk("comprar ", &["strike"]),
+                mk("leite", &["strike", "bold"]),
+                mk(" hoje", &["strike"]),
+            ])]),
+        );
+        assert_eq!(md, "~~comprar **leite** hoje~~");
+        // O comum continua limpo, sem entidades.
+        let md = same(
+            "comum",
+            one(vec![para(vec![
+                tx("a "),
+                mk("b", &["bold"]),
+                tx(" c "),
+                mk("d", &["italic"]),
+                tx("."),
+            ])]),
+        );
+        assert_eq!(md, "a **b** c *d*.");
+    }
+
+    #[test]
+    fn line_breaks_spaces_and_tabs_come_back() {
+        same(
+            "duas quebras",
+            one(vec![para(vec![tx("a"), br(), br(), tx("b")])]),
+        );
+        same("quebra no fim", one(vec![para(vec![tx("a"), br()])]));
+        same("quebra no começo", one(vec![para(vec![br(), tx("a")])]));
+        same("só uma quebra", one(vec![para(vec![br()])]));
+        same(
+            "espaço antes da quebra",
+            one(vec![para(vec![tx("a "), br(), tx("b")])]),
+        );
+        same("espaço no fim", one(vec![para(vec![tx("a ")])]));
+        same("tab no começo", one(vec![para(vec![tx("\tindentado")])]));
+        same(
+            "tab depois da quebra",
+            one(vec![para(vec![tx("a"), br(), tx("\tb")])]),
+        );
+        same(
+            "negrito em duas linhas",
+            one(vec![para(vec![
+                mk("a", &["bold"]),
+                br(),
+                mk("b", &["bold"]),
+            ])]),
+        );
+        same("nbsp no texto", one(vec![para(vec![tx("10\u{a0}km")])]));
+        same("\\r no texto", one(vec![para(vec![tx("x\ry")])]));
+        same(
+            "\\r no título",
+            one(vec![
+                json!({"type":"heading","attrs":{"level":1},"content":[tx("x\ry")]}),
+            ]),
+        );
+        assert_eq!(
+            to_markdown(&one(vec![para(vec![tx("a"), br(), tx("b")])]), &names),
+            "a\nb"
+        );
+    }
+
+    #[test]
+    fn blocks_inside_items_come_back() {
+        let item = |c: Vec<Value>| json!({"type":"bulletList","content":[{"type":"listItem","content":c}]});
+        same(
+            "linha divisória no item",
+            one(vec![item(vec![
+                para(vec![tx("a")]),
+                json!({"type":"horizontalRule"}),
+                json!({"type":"paragraph"}),
+            ])]),
+        );
+        same(
+            "título no item",
+            one(vec![item(vec![
+                para(vec![tx("a")]),
+                json!({"type":"heading","attrs":{"level":3},"content":[tx("h")]}),
+            ])]),
+        );
+        let doc = from_markdown("- Tarefa\n  ### Detalhe");
+        assert_eq!(
+            doc["content"][0]["content"][0]["content"][1]["type"],
+            "heading"
+        );
+        // Item comum cujo texto é "[ ]" continua item comum.
+        same("item [ ]", one(vec![item(vec![para(vec![tx("[ ]")])])]));
+        same("item [x]", one(vec![item(vec![para(vec![tx("[x]")])])]));
+    }
+
+    #[test]
+    fn link_addresses_come_back_as_they_were() {
+        let l = |href: &str| {
+            one(vec![para(vec![
+                json!({"type":"text","text":"v","marks":[{"type":"link","attrs":{"href":href}}]}),
+            ])])
+        };
+        same("&amp; no endereço", l("https://exemplo.com/?a=1&amp;b=2"));
+        same("&copy no endereço", l("https://exemplo.com/a&copy;b"));
+        same("< e > no endereço", l("https://exemplo.com/<a> b"));
+        same(
+            "cartão com &amp;",
+            one(vec![
+                json!({"type":"linkCard","attrs":{"url":"https://exemplo.com/?x=&lt;"}}),
+            ]),
+        );
+    }
+
+    #[test]
+    fn blocks_inside_table_cells_keep_their_text() {
+        let cell = |k: &str, c: Vec<Value>| json!({"type":k,"attrs":{"colspan":1,"rowspan":1},"content":c});
+        let table = |c: Vec<Value>| {
+            one(vec![json!({"type":"table","content":[
+                {"type":"tableRow","content":[cell("tableHeader", vec![para(vec![tx("H")])]), cell("tableHeader", vec![para(vec![tx("I")])])]},
+                {"type":"tableRow","content":[cell("tableCell", c), cell("tableCell", vec![para(vec![tx("z")])])]}]})])
+        };
+        let texts = |doc: &Value| -> String {
+            let cell = &doc["content"][0]["content"][1]["content"][0];
+            plain(cell)
+        };
+        let cases = [
+            table(vec![
+                json!({"type":"bulletList","content":[{"type":"listItem","content":[para(vec![tx("um")])]},{"type":"listItem","content":[para(vec![mk("dois", &["bold"])])]}]}),
+            ]),
+            table(vec![
+                json!({"type":"taskList","content":[{"type":"taskItem","attrs":{"checked":true},"content":[para(vec![tx("um")])]}]}),
+            ]),
+            table(vec![json!({"type":"codeBlock","content":[tx("l1\nl2")]})]),
+            table(vec![
+                json!({"type":"blockquote","content":[para(vec![tx("dito")])]}),
+            ]),
+            table(vec![para(vec![tx("a")]), para(vec![tx("b")])]),
+        ];
+        let want = ["- um - dois", "- [x] um", "l1 l2", "dito", "a b"];
+        for (doc, want) in cases.iter().zip(want) {
+            let md = to_markdown(doc, &names);
+            let back = from_markdown(&md);
+            assert_eq!(
+                back["content"].as_array().unwrap().len(),
+                1,
+                "a tabela não racha: {md:?}"
+            );
+            let rows = back["content"][0]["content"].as_array().unwrap();
+            assert_eq!(rows.len(), 2, "{md:?}");
+            assert_eq!(
+                texts(&back)
+                    .split_whitespace()
+                    .collect::<Vec<_>>()
+                    .join(" "),
+                want,
+                "{md:?}"
+            );
+            assert_eq!(plain(&rows[1]["content"][1]), "z", "{md:?}");
+        }
+        // A marca do texto da lista fica.
+        let md = to_markdown(&cases[0], &names);
+        let back = from_markdown(&md);
+        let cell = &back["content"][0]["content"][1]["content"][0]["content"][0]["content"];
+        assert!(
+            cell.as_array()
+                .unwrap()
+                .iter()
+                .any(|t| t["text"] == "dois" && t["marks"][0]["type"] == "bold"),
+            "{md:?}"
         );
     }
 

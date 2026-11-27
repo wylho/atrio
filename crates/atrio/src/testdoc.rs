@@ -28,8 +28,9 @@ fn words(nasty: bool) -> BoxedStrategy<String> {
         .boxed()
 }
 
-/// Conteúdo de um parágrafo: trechos com ou sem negrito/itálico/tachado/código, separados por espaço sem marca, e às
-/// vezes uma quebra de linha.
+/// Conteúdo de um parágrafo: trechos com ou sem negrito/itálico/tachado/código, separados por espaço sem marca,
+/// colados um no outro (marcas vizinhas, marca colada em letra ou pontuação) ou por uma ou duas quebras de linha; às
+/// vezes com espaço dentro da marca, nas pontas, e quebra no começo ou no fim.
 fn inline(nasty: bool) -> BoxedStrategy<Vec<Value>> {
     let marks = (
         any::<bool>(),
@@ -49,20 +50,37 @@ fn inline(nasty: bool) -> BoxedStrategy<Vec<Value>> {
             ]),
         ),
     );
-    let run = (words(nasty), marks, extra, prop::bool::weighted(0.1));
-    prop::collection::vec(run, 1..4)
-        .prop_map(|runs| {
+    // 0 = espaço, 1 = colado, 2 = quebra, 3 = duas quebras
+    let sep = prop_oneof![5 => Just(0u8), 3 => Just(1u8), 1 => Just(2u8), 1 => Just(3u8)];
+    let pad = prop_oneof![8 => Just(""), 1 => Just(" "), 1 => Just("\t")];
+    let run = (words(nasty), marks, extra, sep, (pad.clone(), pad));
+    let edges = (prop::bool::weighted(0.05), prop::bool::weighted(0.05));
+    (prop::collection::vec(run, 1..4), edges)
+        .prop_map(|(runs, (br_start, br_end))| {
             let mut out: Vec<Value> = Vec::new();
-            for (i, (text, (bold, italic, strike, code), (prompt, link), br)) in
+            if br_start {
+                out.push(json!({"type": "hardBreak"}));
+            }
+            for (i, (text, (bold, italic, strike, code), (prompt, link), sep, (lead, trail))) in
                 runs.into_iter().enumerate()
             {
                 if i > 0 {
-                    if br {
-                        out.push(json!({"type": "hardBreak"}));
-                    } else {
-                        out.push(json!({"type": "text", "text": " "}));
+                    match sep {
+                        0 => out.push(json!({"type": "text", "text": " "})),
+                        1 => {}
+                        2 => out.push(json!({"type": "hardBreak"})),
+                        _ => {
+                            out.push(json!({"type": "hardBreak"}));
+                            out.push(json!({"type": "hardBreak"}));
+                        }
                     }
                 }
+                // tab só no texto comum (no código ele fica, mas o editor não o põe ali)
+                let text = if code {
+                    text
+                } else {
+                    format!("{lead}{text}{trail}")
+                };
                 let mut marks = Vec::new();
                 if bold {
                     marks.push(json!({"type": "bold"}));
@@ -88,7 +106,29 @@ fn inline(nasty: bool) -> BoxedStrategy<Vec<Value>> {
                 }
                 out.push(t);
             }
-            out
+            if br_end {
+                out.push(json!({"type": "hardBreak"}));
+            }
+            // trechos seguidos com as mesmas marcas são um só, como no editor
+            let mut merged: Vec<Value> = Vec::new();
+            for t in out {
+                if let Some(prev) = merged.last_mut() {
+                    if prev["type"] == "text"
+                        && t["type"] == "text"
+                        && prev.get("marks") == t.get("marks")
+                    {
+                        let text = format!(
+                            "{}{}",
+                            prev["text"].as_str().unwrap_or(""),
+                            t["text"].as_str().unwrap_or("")
+                        );
+                        prev["text"] = json!(text);
+                        continue;
+                    }
+                }
+                merged.push(t);
+            }
+            merged
         })
         .boxed()
 }

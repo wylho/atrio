@@ -1,0 +1,8 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc df2686a44e93c95305da24f99a70c525076f7829ab0c50a96672825e9afe2c19 # shrinks to doc = Object {"content": Array [Object {"content": Array [Object {"marks": Array [Object {"type": String("prompt")}], "text": String("ã "), "type": String("text")}, Object {"text": String(" "), "type": String("text")}, Object {"text": String("A"), "type": String("text")}], "type": String("paragraph")}], "type": String("doc")}
+cc 52ccc1140e6f01d92d4f960639afe321e837055a9463610b7e3f733a8c48df4d # shrinks to doc = Object {"content": Array [Object {"content": Array [Object {"content": Array [Object {"content": Array [Object {"marks": Array [Object {"type": String("bold")}, Object {"type": String("code")}], "text": String("A"), "type": String("text")}, Object {"marks": Array [Object {"type": String("bold")}, Object {"type": String("code")}], "text": String("A"), "type": String("text")}], "type": String("paragraph")}], "type": String("listItem")}], "type": String("bulletList")}], "type": String("doc")}
