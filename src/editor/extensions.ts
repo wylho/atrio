@@ -130,9 +130,45 @@ const Hashtags = Extension.create({
   },
 })
 
+const LIST_TYPES = new Set(['bulletList', 'orderedList', 'taskList'])
+
+/** Tab e Shift+Tab no texto: em lista, recuam e voltam um nível; no primeiro nível, Shift+Tab não tira o item da
+ *  lista (o menu do item também não deixa); onde não dá para recuar, Tab não faz nada (antes o foco saía do texto e o
+ *  que se digitava em seguida se perdia). Shift+Tab fora de lista fica para o app (volta ao título). */
+const ListTabs = Extension.create({
+  name: 'listTabs',
+  priority: 200,
+  addKeyboardShortcuts() {
+    const item = () => {
+      const $f = this.editor.state.selection.$from
+      for (let d = $f.depth; d > 0; d--) {
+        const name = $f.node(d).type.name
+        // Na tabela, Tab passa de célula (a da tabela decide).
+        if (name === 'tableCell' || name === 'tableHeader') return 'table' as const
+        if (name === 'listItem' || name === 'taskItem') return { name, nested: d >= 3 && ['listItem', 'taskItem'].includes($f.node(d - 2).type.name) }
+      }
+      return null
+    }
+    return {
+      Tab: () => {
+        const it = item()
+        if (it === 'table') return false
+        if (it) this.editor.commands.sinkListItem(it.name)
+        return true
+      },
+      'Shift-Tab': () => {
+        const it = item()
+        if (!it || it === 'table') return false
+        if (it.nested) this.editor.commands.liftListItem(it.name)
+        return true
+      },
+    }
+  },
+})
+
 /** Esquema do corpo das notas. O mesmo conjunto serve ao editor e à conversão de HTML. */
 /** Texto com cara de Markdown: título, lista, checklist, citação, linha, tabela, bloco de código ou marcas no meio. */
-const MARKDOWN = /^(#{1,3} |[-*+] |\d+[.)] |> |```|---\s*$|\|.+\|\s*$)|\*\*[^*\n]+\*\*|~~[^~\n]+~~|`[^`\n]+`/m
+const MARKDOWN = /^(#{1,3} |[-*+] |\d+[.)] |> |```|---\s*$|\|.+\|\s*$)|\*\*[^*\n]+\*\*|~~[^~\n]+~~|`[^`\n]+`|\[[^\]\n]+\]\([^)\s]+\)|<prompt>/m
 
 /** Colar Markdown (de um chat, do VS Code, de um README): vira título, lista, tabela… em vez de texto com # e |. */
 export const MarkdownPaste = Extension.create<{ convert?: (md: string) => Promise<{ content?: unknown[] } | null> }>({
@@ -150,8 +186,10 @@ export const MarkdownPaste = Extension.create<{ convert?: (md: string) => Promis
             if (!convert || !md || !MARKDOWN.test(md)) return false
             // Com HTML de verdade (página, outro app de texto, outra nota), vale o HTML. Editor de código manda o
             // texto num HTML só de estilo: ali o texto é o Markdown.
+            // Copiado do próprio editor (`data-pm-slice`) ou com código (`pre`, `code`): o HTML, senão um "# instala"
+            // de dentro do código viraria título.
             const html = cd?.getData('text/html') ?? ''
-            if (html && new DOMParser().parseFromString(html, 'text/html').body.querySelector('h1,h2,h3,h4,ul,ol,li,table,blockquote,img,a,b,strong,em,i')) return false
+            if (html && new DOMParser().parseFromString(html, 'text/html').body.querySelector('[data-pm-slice],pre,code,h1,h2,h3,h4,ul,ol,li,table,blockquote,img,a,b,strong,em,i')) return false
             // Dentro de código ou de tabela, cola como está.
             const $from = view.state.selection.$from
             for (let d = $from.depth; d > 0; d--) if (['codeBlock', 'table'].includes($from.node(d).type.name)) return false
@@ -163,9 +201,13 @@ export const MarkdownPaste = Extension.create<{ convert?: (md: string) => Promis
                 return
               }
               const frag = Fragment.fromJSON(state.schema, doc.content)
-              // Um parágrafo só: entra no meio do texto, sem quebrar a linha.
-              const open = frag.childCount === 1 && frag.firstChild?.type.name === 'paragraph' ? 1 : 0
-              view.dispatch(state.tr.replaceSelection(new Slice(frag, open, open)).scrollIntoView())
+              // Um parágrafo só: entra no meio do texto, sem quebrar a linha. Uma lista colada num item da mesma
+              // lista continua a lista (os itens entram ao lado, não como subitens).
+              const one = frag.childCount === 1 ? frag.firstChild! : null
+              const $at = state.selection.$from
+              const inSame = one && LIST_TYPES.has(one.type.name) && $at.depth >= 2 && $at.node($at.depth - 2).type === one.type
+              const slice = inSame ? Slice.maxOpen(frag) : one?.type.name === 'paragraph' ? new Slice(frag, 1, 1) : new Slice(frag, 0, 0)
+              view.dispatch(state.tr.replaceSelection(slice).scrollIntoView())
             })
             return true
           },
@@ -228,6 +270,7 @@ export function noteExtensions(opts: {
     MarkdownPaste.configure({ convert: opts.markdown }),
     Hashtags,
     CheckCascade,
+    ListTabs,
     SelectAllDom,
     ...(opts.placeholder ? [Placeholder.configure({ placeholder: opts.placeholder })] : []),
     ...(opts.ydoc ? [Collaboration.configure({ document: opts.ydoc, field: opts.field ?? 'body' })] : []),

@@ -3,13 +3,13 @@
   import { NoteEditor } from '../src/editor'
   import { emptyMeta, type CardFeatures, type CardMeta } from '../src/index'
 
-  let { features, content, onbody, init = {}, askText }: { features: CardFeatures; content: unknown; onbody?: (text: string) => void; init?: Partial<CardMeta>; askText?: (o: { title: string; label: string; confirm: string; value?: string }) => Promise<string | null> } = $props()
+  let { features, content, onbody, init = {}, askText, gate }: { features: CardFeatures; content: unknown; onbody?: (text: string) => void; init?: Partial<CardMeta>; askText?: (o: { title: string; label: string; confirm: string; value?: string }) => Promise<string | null>; gate?: () => Promise<void> } = $props()
   // svelte-ignore state_referenced_locally
   const meta = $state(emptyMeta({ title: 'Plano', ...init }))
   let card: NoteEditor | undefined = $state()
 
-  export function addFiles(files: { blob: Blob; name: string }[]) {
-    card?.addFiles(files)
+  export function addFiles(files: { blob: Blob; name: string }[], pos?: number) {
+    return card?.addFiles(files, pos)
   }
 
   export function editor() {
@@ -39,7 +39,7 @@
     askText,
     tags: () => [{ name: 'casa', count: 2 }],
     categories: () => [{ id: 'c1', name: 'Trabalho', color: '#36c' }],
-    importFile: async (_blob, name) => ({
+    importFile: async (_blob, name) => (await gate?.(), {
       hash: 'f0f0f0f0', name, mime: 'image/png', kind: 'image', bytes: 3, origBytes: null,
       width: null, height: null, palette: null, tone: null, addedAt: 0,
     }),

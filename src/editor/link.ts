@@ -15,6 +15,21 @@ export function bareUrl(text: string): string | null {
   }
 }
 
+/** Endereço digitado para um link (⌘K, "+ Link…"): http(s) como veio, `mailto:`/`tel:`; sem esquema, ganha o
+ *  `https://` só se parece um site (nome com ponto, ou `localhost`). "abc" ou "olá" não são endereço. */
+export function linkTarget(text: string): string | null {
+  const t = text.trim()
+  if (/^(mailto|tel):[^\s/]\S*$/i.test(t)) return t
+  const direct = bareUrl(t)
+  if (direct) return direct
+  // outro esquema ("ftp:", "javascript:"), que não seja nome:porta
+  if (/^[a-z][a-z0-9+.-]*:/i.test(t) && !/^[\w.-]+:\d+(\/|$)/.test(t)) return null
+  const url = bareUrl(`https://${t}`)
+  if (!url) return null
+  const host = new URL(url).hostname
+  return host.includes('.') || host === 'localhost' ? url : null
+}
+
 export const siteOf = (url: string) => {
   try {
     return new URL(url).hostname.replace(/^www\./, '')
@@ -140,18 +155,22 @@ export function insertLinkCard(view: EditorView, url: string, from: number, to: 
   view.focus()
 }
 
-/** Busca a prévia e completa os cartões com esse endereço que ainda não têm título. */
-export function fillPreview(view: EditorView, url: string, preview: (url: string) => Promise<LinkPreview>) {
+/** Busca a prévia e completa os cartões com esse endereço que ainda não têm título (`refresh`: troca a prévia dos
+ *  que já têm, se a nova chegar; sem rede, o cartão fica como estava). A prévia não entra no desfazer: o Ctrl+Z
+ *  depois de colar o endereço tira o cartão, não só a prévia. */
+export function fillPreview(view: EditorView, url: string, preview: (url: string) => Promise<LinkPreview>, refresh = false) {
   void preview(url)
     .then((p) => {
       if (view.isDestroyed) return
+      if (refresh && !p.title && !p.description && !p.image) return
       const tr = view.state.tr
       view.state.doc.descendants((n, pos) => {
-        if (n.type.name === 'linkCard' && n.attrs.url === url && !n.attrs.title) {
-          tr.setNodeMarkup(pos, undefined, { ...n.attrs, title: p.title, description: p.description, site: p.site ?? n.attrs.site, image: p.image })
+        if (n.type.name === 'linkCard' && n.attrs.url === url && (refresh || !n.attrs.title)) {
+          const a = n.attrs
+          tr.setNodeMarkup(pos, undefined, { ...a, title: p.title ?? a.title, description: p.description ?? a.description, site: p.site ?? a.site, image: p.image ?? a.image })
         }
       })
-      if (tr.docChanged) view.dispatch(tr)
+      if (tr.docChanged) view.dispatch(tr.setMeta('addToHistory', false))
     })
     .catch(() => {})
 }

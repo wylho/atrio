@@ -8,7 +8,7 @@
   // `onbody`, para quem guarda a nota de outro jeito).
   import { mount, untrack, unmount, type Snippet } from 'svelte'
   import { Editor as TipTap, type ChainedCommands } from '@tiptap/core'
-  import { NodeSelection } from '@tiptap/pm/state'
+  import { NodeSelection, type Transaction } from '@tiptap/pm/state'
   import { Dialog, DropdownMenu, Popover, Select } from 'bits-ui'
   import type * as Y from 'yjs'
   import {
@@ -18,7 +18,7 @@
     Pilcrow, Scissors, SquareCheck, SquareDashed, ExternalLink, ListIndentDecrease, ListIndentIncrease, Link2, RefreshCw,
     Link, Sparkles,
   } from '@lucide/svelte'
-  import { bareUrl, fillPreview, insertLinkCard } from '../editor/link'
+  import { fillPreview, insertLinkCard, linkTarget } from '../editor/link'
   import {
     blockAt, canIndent, canMove, checkAll, checkCount, clipNode, convertBlock, deleteChecked, deleteNode, duplicateNode,
     moveNode, shapeOf, dropTargetAt, moveNodeTo, type BlockHit, type Shape,
@@ -160,10 +160,14 @@
     cameraOpen = true
   }
 
-  /** Para de gravar e põe a gravação no texto. */
-  export async function stopRecording() {
-    const rec = await recorder.stop()
-    if (rec) await addFiles([rec])
+  let stopping: Promise<void> | null = null
+  /** Para de gravar e põe a gravação no texto (uma vez só, mesmo chamado de novo enquanto guarda). */
+  export function stopRecording(): Promise<void> {
+    stopping ??= (async () => {
+      const rec = await recorder.stop()
+      if (rec) await addFiles([rec])
+    })().finally(() => (stopping = null))
+    return stopping
   }
 
   /** Joga fora a gravação em andamento. */
@@ -173,7 +177,7 @@
 
   /** Espera os arquivos que ainda estão entrando (fechar a nota não perde nenhum). */
   export async function settle() {
-    if (recorder.recording) await stopRecording()
+    if (recorder.recording || stopping) await stopRecording()
     await Promise.allSettled([...imports])
   }
 
@@ -205,9 +209,16 @@
   const inlineLinks = $derived.by(() => {
     void tick
     const seen = new Map<string, string>()
+    // O texto de um link é o dos pedaços seguidos com o mesmo endereço (negrito no meio não divide); de uma vez para
+    // outra, fica o da primeira.
+    let run: { href: string; done: boolean } | null = null
     editor?.state.doc.descendants((n) => {
+      if (n.isTextblock) run = null
+      if (!n.isInline) return
       const href = n.isText ? n.marks.find((m) => m.type.name === 'link')?.attrs.href : undefined
-      if (typeof href === 'string' && href) seen.set(href, (seen.get(href) ?? '') + (n.text ?? ''))
+      if (typeof href !== 'string' || !href) return void (run = null)
+      if (run?.href !== href) run = { href, done: seen.has(href) }
+      if (!run.done) seen.set(href, (seen.get(href) ?? '') + (n.text ?? ''))
     })
     return [...seen].map(([href, text]) => ({ href, text: text.trim() || href, site: siteOf(href) }))
   })
@@ -232,7 +243,7 @@
     if (text == null) return
     const chain = editor.chain().focus().setTextSelection({ from, to }).extendMarkRange('link')
     if (!text.trim()) return void chain.unsetLink().run()
-    const url = bareUrl(text) ?? bareUrl(`https://${text}`)
+    const url = linkTarget(text)
     if (!url) return say(t('Isso não parece um endereço'))
     chain.setLink({ href: url }).run()
   }
@@ -245,7 +256,7 @@
       ? await host.askText({ title: t('Inserir link'), label: t('Endereço (https://…)'), confirm: t('Inserir') })
       : window.prompt(t('Endereço (https://…)'))
     if (text == null) return
-    const url = bareUrl(text) ?? bareUrl(`https://${text}`)
+    const url = linkTarget(text)
     if (!url || !editor) {
       say(t('Isso não parece um endereço'))
       return
@@ -323,7 +334,9 @@
           // ⌘/Ctrl+clique num link da palavra abre o endereço (o clique comum só põe o cursor, para editar).
           handleClick: (view, pos, e) => {
             if (!(e.metaKey || e.ctrlKey)) return false
-            const href = view.state.doc.resolve(pos).marks().find((m) => m.type.name === 'link')?.attrs.href
+            // O elemento clicado diz qual link é (nas bordas da palavra a posição cai fora da marca).
+            const a = (e.target as Element | null)?.closest?.('a[href]')
+            const href = (a && view.dom.contains(a) ? a.getAttribute('href') : null) ?? view.state.doc.resolve(pos).marks().find((m) => m.type.name === 'link')?.attrs.href
             if (typeof href !== 'string' || !href) return false
             host.openUrl?.(href)
             return true
@@ -345,7 +358,7 @@
       // Logo depois da montagem: o app já tem o `bind:this` do card para pôr arquivos, gravar etc.
       queueMicrotask(() => !ed.isDestroyed && onready?.(ed))
       return () => {
-        if (recorder.recording) recorder.cancel()
+        recorder.cancel()
         ondestroy?.()
         ed.destroy()
       }
@@ -512,8 +525,7 @@
         {
           label: t('Atualizar prévia'), icon: RefreshCw,
           onSelect: () => {
-            view.dispatch(view.state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, title: null }))
-            if (host.linkPreview) fillPreview(view, url, (u) => host.linkPreview!(u))
+            if (host.linkPreview) fillPreview(view, url, (u) => host.linkPreview!(u), true)
           },
         },
         SEP,
@@ -607,6 +619,32 @@
 
   async function importFiles(list: (DroppedFile | { blob: Blob; name: string })[], pos?: number) {
     if (!editor || !list.length) return
+    // A importação demora (o pipeline das fotos): o ponto escolhido acompanha o que se digita enquanto isso.
+    let at = pos
+    const follow = ({ transaction }: { transaction: Transaction }) => {
+      if (at != null) at = transaction.mapping.map(at)
+    }
+    const ed = editor
+    ed.on('transaction', follow)
+    try {
+      await importInto(list, () => at)
+    } finally {
+      ed.off('transaction', follow)
+    }
+  }
+
+  /** Onde um anexo entra a partir de `p`: entre os blocos de fora (nunca dentro de um item, citação, célula ou linha de
+   *  fotos); `null` = no meio do parágrafo de fora, que se divide. */
+  function blockSpot(p: number): number | null {
+    if (!editor) return null
+    const at = editor.state.doc.resolve(Math.min(p, editor.state.doc.content.size))
+    if (at.depth === 0) return at.pos
+    if (at.depth === 1 && at.parent.isTextblock) return null
+    return at.after(1)
+  }
+
+  async function importInto(list: (DroppedFile | { blob: Blob; name: string })[], pos: () => number | undefined) {
+    if (!editor) return
     // Até 3 de uma vez (cada foto passa pelo pipeline do app), na ordem em que vieram.
     const results: (Attachment | null)[] = new Array(list.length).fill(null)
     let next = 0
@@ -638,15 +676,12 @@
     }
     for (const a of added) if (a.kind !== 'image') nodes.push({ type: 'noteFile', attrs: { hash: a.hash } })
     nodes.push({ type: 'paragraph' })
-    if (pos != null) {
-      editor.chain().focus().setTextSelection(pos).insertContent(nodes).run()
-      return
-    }
-    // Anexo é sempre um bloco do texto: com o cursor numa lista (ou citação, tabela), entra logo depois dela, não
-    // dentro do item.
-    const from = editor.state.selection.$from
-    if (from.depth > 1) editor.chain().focus().insertContentAt(from.after(1), nodes).run()
-    else editor.chain().focus().insertContent(nodes).run()
+    // Anexo é sempre um bloco do texto: no ponto escolhido (colar, soltar) ou no cursor, mas com o cursor numa lista
+    // (ou citação, tabela, linha de fotos) entra logo depois dela, não dentro do item. Com algo escolhido (uma foto,
+    // um trecho, a nota toda), entra depois, sem tomar o lugar do que estava escolhido.
+    const p = pos() ?? editor.state.selection.to
+    const spot = blockSpot(p)
+    editor.chain().focus().insertContentAt(spot ?? p, nodes).run()
   }
 
   function pick(input: HTMLInputElement | undefined) {
@@ -692,7 +727,7 @@
     bind:value={meta.title}
     use:autosize={meta.title}
     oninput={(e) => /\n/.test(e.currentTarget.value) && (meta.title = e.currentTarget.value.replace(/\s*\n\s*/g, ' '))}
-    onkeydown={(e) => e.key === 'Enter' && (e.preventDefault(), editor?.commands.focus('start'))}
+    onkeydown={(e) => e.key === 'Enter' && !e.isComposing && (e.preventDefault(), editor?.commands.focus('start'))}
   ></textarea>
 {/snippet}
 

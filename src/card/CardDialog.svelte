@@ -27,7 +27,9 @@
   onMount(() => trackCardOpen())
 </script>
 
-<Dialog.Root open onOpenChange={(o) => !o && onclose()}>
+<!-- Sempre aberto enquanto o app o mostra: Esc e o clique fora só pedem para fechar (onclose). Sem isto o bits-ui
+     desmontava o card na hora, antes de a sessão esperar a gravação e os arquivos que entravam e salvar. -->
+<Dialog.Root bind:open={() => true, (o) => !o && onclose()}>
   <Dialog.Portal>
     {#if !own}<Dialog.Overlay class="overlay ed-overlay" />{/if}
     <Dialog.Content

@@ -7,8 +7,18 @@ export type HeadingLevel = 1 | 2 | 3
 
 /** Tamanho do título do bloco onde a seleção começa (0 = não é título). */
 export function headingAt(editor: Editor | null | undefined): HeadingLevel | 0 {
-  const node = editor?.state.selection.$from.parent
-  return node?.type.name === 'heading' ? ((node.attrs.level as HeadingLevel) ?? 0) : 0
+  const sel = editor?.state.selection
+  if (!sel) return 0
+  let node = sel.$from.parent
+  // A nota toda escolhida (Ctrl+A): o começo da seleção é a raiz; vale o primeiro bloco de texto.
+  if (!node.isTextblock) {
+    sel.$from.doc.nodesBetween(sel.from, sel.to, (n) => {
+      if (node.isTextblock) return false
+      if (n.isTextblock) node = n
+      return !n.isTextblock
+    })
+  }
+  return node.type.name === 'heading' ? ((node.attrs.level as HeadingLevel) ?? 0) : 0
 }
 
 /** Aplica o tamanho escolhido (0 = texto). O mesmo tamanho de novo volta a texto. */

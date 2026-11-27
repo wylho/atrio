@@ -27,14 +27,30 @@ export class Recorder {
   private stream: MediaStream | null = null
   private chunks: Blob[] = []
   private timer: ReturnType<typeof setInterval> | undefined
+  private stopping: Promise<{ blob: Blob; name: string } | null> | null = null
+  /** Pedindo o microfone (o primeiro pedido espera a pessoa responder). */
+  private starting = false
+  /** Cancelado enquanto pedia: o microfone que chegar é desligado na hora. */
+  private abandoned = false
 
   async start() {
+    if (this.recording || this.starting) return false
+    this.starting = true
+    this.abandoned = false
+    let stream: MediaStream
     try {
-      this.stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true })
     } catch {
       say(t('Sem acesso ao microfone'))
       return false
+    } finally {
+      this.starting = false
     }
+    if (this.abandoned) {
+      stream.getTracks().forEach((t) => t.stop())
+      return false
+    }
+    this.stream = stream
     this.chunks = []
     this.rec = new MediaRecorder(this.stream)
     this.rec.ondataavailable = (e) => e.data.size && this.chunks.push(e.data)
@@ -48,19 +64,27 @@ export class Recorder {
 
   /** Para e devolve o áudio, com um nome como "Gravação 09-10 15h42.webm". */
   stop(): Promise<{ blob: Blob; name: string } | null> {
+    // Parar duas vezes (o botão Parar e o fechar do card) devolve a mesma gravação, uma vez só.
+    if (this.stopping) return this.stopping
     const rec = this.rec
     if (!rec) return Promise.resolve(null)
-    return new Promise((resolve) => {
+    this.stopping = new Promise((resolve) => {
       rec.onstop = () => {
         const type = rec.mimeType || 'audio/webm'
         this.cleanup()
+        this.stopping = null
         resolve({ blob: new Blob(this.chunks, { type }), name: `${t('Gravação {quando}', { quando: stamp() })}.${ext(type)}` })
       }
       rec.stop()
     })
+    return this.stopping
   }
 
+  /** Joga fora a gravação (e desliga o microfone, também o que ainda está sendo pedido). Uma gravação que já está
+   *  sendo guardada (`stop`) continua. */
   cancel() {
+    if (this.starting) this.abandoned = true
+    if (this.stopping) return
     if (this.rec) {
       this.rec.onstop = () => this.cleanup()
       this.rec.stop()

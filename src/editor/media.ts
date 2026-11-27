@@ -264,7 +264,8 @@ function photoDrag(view: EditorView, from: number, el: HTMLElement, e: PointerEv
     }
     const under = document.elementFromPoint(ev.clientX, ev.clientY)
     zone = under && under !== el ? dropZone(view, { target: under, clientX: ev.clientX }) : null
-    if (zone && zone.pos !== from) {
+    // Linha cheia (4 fotos): a borda não junta, então nem marca.
+    if (zone && zone.pos !== from && placeBeside(view.state, from, zone.pos, zone.side)) {
       mark(zone.el, zone.side)
       target = null
       line.hidden = true
