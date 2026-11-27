@@ -122,6 +122,7 @@ export const EN: Record<string, string> = {
   'Transformar em': 'Turn into',
   Texto: 'Text',
   Lista: 'List',
+  'Lista numerada': 'Numbered list',
   Código: 'Code',
   'Checklist inteira': 'Whole checklist',
   'Lista inteira': 'Whole list',

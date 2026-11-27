@@ -5,9 +5,9 @@ import type * as Y from 'yjs'
 import { TaskItem, TaskList } from '@tiptap/extension-list'
 import { TableKit } from '@tiptap/extension-table'
 import { Placeholder } from '@tiptap/extensions'
-import { AllSelection, Plugin, PluginKey, Selection } from '@tiptap/pm/state'
+import { AllSelection, Plugin, PluginKey, Selection, type Transaction } from '@tiptap/pm/state'
 import { Fragment, Slice } from '@tiptap/pm/model'
-import { Mapping } from '@tiptap/pm/transform'
+import { AttrStep, ReplaceAroundStep } from '@tiptap/pm/transform'
 import { ySyncPluginKey } from '@tiptap/y-tiptap'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import type { Node as PMNode } from '@tiptap/pm/model'
@@ -16,28 +16,45 @@ import { LinkCard, type LinkOptions } from './link'
 import { Prompt } from './prompt'
 import { t } from '../i18n.svelte'
 
+/** Itens de checklist em que alguém mexeu na caixinha nesta transação: a posição (no documento final) de cada nó que
+ *  um passo só remarcou (`setNodeMarkup`/`setNodeAttribute`) com outro `checked`. Mover, duplicar, colar ou
+ *  transformar não remarcam o nó (trocam o trecho inteiro), então não contam. */
+function toggledItems(tr: Transaction): number[] {
+  const out: number[] = []
+  tr.steps.forEach((step, i) => {
+    let at = -1
+    if (step instanceof AttrStep) at = step.attr === 'checked' ? step.pos : -1
+    else if (step instanceof ReplaceAroundStep) {
+      const s = step as unknown as { from: number; to: number; gapFrom: number; gapTo: number; insert: number; structure: boolean }
+      if (s.structure && s.insert === 1 && s.gapFrom === s.from + 1 && s.gapTo === s.to - 1) at = s.from
+    }
+    if (at < 0) return
+    const before = tr.docs[i].nodeAt(at)
+    const after = (tr.docs[i + 1] ?? tr.doc).nodeAt(at)
+    if (before?.type.name !== 'taskItem' || after?.type.name !== 'taskItem' || before.attrs.checked === after.attrs.checked) return
+    const end = tr.mapping.slice(i + 1).mapResult(at)
+    if (!end.deleted) out.push(end.pos)
+  })
+  return out
+}
+
 /** Marcar (ou desmarcar) um item de checklist faz o mesmo com os subitens dele, como no Google Keep. Só para o que
- *  se faz aqui: o que chega de outro aparelho (Yjs) já vem como lá ficou. */
+ *  se faz aqui: o que chega de outro aparelho (Yjs) já vem como lá ficou, e o desfazer devolve cada item como era. */
 const CheckCascade = Extension.create({
   name: 'checkCascade',
   addProseMirrorPlugins() {
     return [
       new Plugin({
         key: new PluginKey('checkCascade'),
-        appendTransaction(trs, oldState, newState) {
-          if (!trs.some((tr) => tr.docChanged) || trs.some((tr) => tr.getMeta(ySyncPluginKey))) return null
-          const back = new Mapping()
-          for (const tr of trs) back.appendMapping(tr.mapping)
-          const inv = back.invert()
-          const toggled: [number, PMNode, boolean][] = []
-          newState.doc.descendants((node, pos) => {
-            if (node.type.name !== 'taskItem') return
-            const old = oldState.doc.nodeAt(inv.map(pos))
-            if (old?.type.name === 'taskItem' && old.attrs.checked !== node.attrs.checked) toggled.push([pos, node, node.attrs.checked])
-          })
-          if (!toggled.length) return null
+        appendTransaction(trs, _oldState, newState) {
+          if (!trs.some((tr) => tr.docChanged) || trs.some((tr) => tr.getMeta(ySyncPluginKey) || tr.getMeta('history$'))) return null
+          let toggled: number[] = []
+          for (const tr of trs) toggled = [...toggled.map((p) => tr.mapping.map(p)), ...toggledItems(tr)]
           const tr = newState.tr
-          for (const [pos, item, checked] of toggled) {
+          for (const pos of toggled) {
+            const item = newState.doc.nodeAt(pos)
+            if (item?.type.name !== 'taskItem') continue
+            const checked = item.attrs.checked
             item.descendants((child, offset) => {
               if (child.type.name === 'taskItem' && child.attrs.checked !== checked) {
                 tr.setNodeMarkup(pos + 1 + offset, undefined, { ...child.attrs, checked })

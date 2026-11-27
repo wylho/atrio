@@ -14,7 +14,7 @@
   import {
     Bold, Camera, Check, ChevronDown, ChevronLeft, ChevronRight, Columns2, Heading, Image, Italic, List, ListChecks, Mic,
     SquareCode, Palette, Table, TextQuote, Minus, BetweenHorizontalStart, BetweenVerticalStart, Paperclip, Plus, Redo2,
-    Rows2, Square, Tag, Trash2, Undo2, X, ArrowDown, ArrowUp, Copy, CopyPlus, Download, Eye, GripVertical, ListTodo,
+    Rows2, Square, Tag, Trash2, Undo2, X, ArrowDown, ArrowUp, Copy, CopyPlus, Download, Eye, GripVertical, ListTodo, ListOrdered,
     Pilcrow, Scissors, SquareCheck, SquareDashed, ExternalLink, ListIndentDecrease, ListIndentIncrease, Link2, RefreshCw,
     Link, Sparkles,
   } from '@lucide/svelte'
@@ -566,8 +566,9 @@
         SEP,
         { label: t('Linha abaixo'), icon: BetweenHorizontalStart, onSelect: at((c) => c.addRowAfter()) },
         { label: t('Coluna à direita'), icon: BetweenVerticalStart, onSelect: at((c) => c.addColumnAfter()) },
-        { label: t('Apagar linha'), icon: Minus, onSelect: at((c) => c.deleteRow()) },
-        { label: t('Apagar coluna'), icon: Minus, onSelect: at((c) => c.deleteColumn()) },
+        // A última linha ou coluna não sai (o comando recusa): o item fica apagado em vez de não fazer nada.
+        { label: t('Apagar linha'), icon: Minus, disabled: node.childCount < 2, onSelect: at((c) => c.deleteRow()) },
+        { label: t('Apagar coluna'), icon: Minus, disabled: (node.firstChild?.childCount ?? 0) < 2, onSelect: at((c) => c.deleteColumn()) },
       )
     }
     if (TEXTISH.has(name)) {
@@ -575,7 +576,7 @@
       const opt = (label: string, icon: typeof Pilcrow, to: Shape): MenuEntry => ({ label, icon, checked: cur === to, onSelect: () => transform(pos, to) })
       out.push({
         label: t('Transformar em'), icon: Pilcrow,
-        sub: [opt(t('Texto'), Pilcrow, 'paragraph'), opt(t('Título'), Heading, 'heading'), opt(t('Lista'), List, 'bullet'), opt(t('Checklist'), ListTodo, 'task'), opt(t('Código'), SquareCode, 'code')],
+        sub: [opt(t('Texto'), Pilcrow, 'paragraph'), opt(t('Título'), Heading, 'heading'), opt(t('Lista'), List, 'bullet'), opt(t('Lista numerada'), ListOrdered, 'ordered'), opt(t('Checklist'), ListTodo, 'task'), opt(t('Código'), SquareCode, 'code')],
       })
     }
     if (isItem) {

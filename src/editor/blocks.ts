@@ -112,16 +112,22 @@ export function dropTargetAt(view: EditorView, from: number, y: number): DropTar
   return target
 }
 
+/** O trecho que sai ao tirar o nó em `from`: tirar o único item de uma lista deixaria a lista vazia (inválida, e o
+ *  ProseMirror a completaria com um item vazio), então a lista sai inteira. */
+function cutOf(doc: PMNode, from: number, node: PMNode) {
+  let cut = { from, to: from + node.nodeSize }
+  for (let $c = doc.resolve(cut.from); $c.depth > 0 && $c.parent.childCount === 1 && $c.parent.type.name.endsWith('List'); $c = doc.resolve($c.before())) {
+    cut = { from: $c.before(), to: $c.after() }
+  }
+  return cut
+}
+
 /** Move o nó de `from` para `to` (posições de antes de mover). Uma lista que ficaria vazia sai junto. */
 export function moveNodeTo(view: EditorView, from: number, to: number) {
   const { doc } = view.state
   const node = doc.nodeAt(from)
   if (!node || (to >= from && to <= from + node.nodeSize)) return false
-  let cut = { from, to: from + node.nodeSize }
-  // tirar o único item de uma lista deixaria a lista vazia (inválida): a lista sai inteira
-  for (let $c = doc.resolve(cut.from); $c.depth > 0 && $c.parent.childCount === 1 && $c.parent.type.name.endsWith('List'); $c = doc.resolve($c.before())) {
-    cut = { from: $c.before(), to: $c.after() }
-  }
+  const cut = cutOf(doc, from, node)
   const tr = view.state.tr.delete(cut.from, cut.to)
   const dest = tr.mapping.map(to)
   const $d = tr.doc.resolve(dest)
@@ -144,12 +150,14 @@ export function moveNode(view: EditorView, pos: number, dir: -1 | 1) {
     const tr = view.state.tr.replaceWith(pos - prev.nodeSize, pos + node.nodeSize, [node, prev])
     tr.setSelection(NodeSelection.create(tr.doc, pos - prev.nodeSize))
     view.dispatch(tr.scrollIntoView())
+    view.focus()
   } else {
     const next = doc.nodeAt(pos + node.nodeSize)
     if (!next || $p.index() + 1 >= $p.parent.childCount) return false
     const tr = view.state.tr.replaceWith(pos, pos + node.nodeSize + next.nodeSize, [next, node])
     tr.setSelection(NodeSelection.create(tr.doc, pos + next.nodeSize))
     view.dispatch(tr.scrollIntoView())
+    view.focus()
   }
   return true
 }
@@ -165,11 +173,17 @@ export function duplicateNode(view: EditorView, pos: number) {
   const tr = view.state.tr.insert(pos + node.nodeSize, node)
   tr.setSelection(NodeSelection.create(tr.doc, pos + node.nodeSize))
   view.dispatch(tr.scrollIntoView())
+  // O menu tirou o foco do editor: sem isto, o Ctrl+Z seguinte vai para o desfazer do navegador.
+  view.focus()
 }
 
 export function deleteNode(view: EditorView, pos: number) {
-  const node = view.state.doc.nodeAt(pos)
-  if (node) view.dispatch(view.state.tr.delete(pos, pos + node.nodeSize))
+  const { doc } = view.state
+  const node = doc.nodeAt(pos)
+  if (!node) return
+  const cut = cutOf(doc, pos, node)
+  view.dispatch(view.state.tr.delete(cut.from, cut.to).scrollIntoView())
+  view.focus()
 }
 
 /** Copia ou recorta o nó pela área de transferência do sistema (dá para colar em outra nota, com fotos e anexos). */
@@ -231,34 +245,49 @@ export function canIndent(view: EditorView, pos: number, dir: 1 | -1) {
 }
 
 /** Formas que um bloco de texto pode tomar ("Transformar em"). */
-export type Shape = 'paragraph' | 'heading' | 'bullet' | 'task' | 'code'
+export type Shape = 'paragraph' | 'heading' | 'bullet' | 'ordered' | 'task' | 'code'
+type ListShape = 'bullet' | 'ordered' | 'task'
 
-const LISTS: Record<'bullet' | 'task', [string, string]> = { bullet: ['bulletList', 'listItem'], task: ['taskList', 'taskItem'] }
+const LIST_NAMES = new Set(['bulletList', 'orderedList', 'taskList'])
+const LISTS: Record<ListShape, [string, string]> = {
+  bullet: ['bulletList', 'listItem'],
+  ordered: ['orderedList', 'listItem'],
+  task: ['taskList', 'taskItem'],
+}
+const isListShape = (to: Shape): to is ListShape => to in LISTS
 
 export const shapeOf = (name: string): Shape | null =>
-  (({ paragraph: 'paragraph', heading: 'heading', bulletList: 'bullet', orderedList: 'bullet', taskList: 'task', codeBlock: 'code' }) as Record<string, Shape>)[name] ??
+  (({ paragraph: 'paragraph', heading: 'heading', bulletList: 'bullet', orderedList: 'ordered', taskList: 'task', codeBlock: 'code' }) as Record<string, Shape>)[name] ??
   null
 
-/** Linhas de texto de um bloco, na ordem: os parágrafos dos itens (subitens inclusive) ou as linhas do código. */
+/** Fotos, linhas de fotos, anexos, cartões de link e a linha divisória: blocos sem texto que "Transformar em" leva
+ *  como estão (num item de lista, eles vêm de notas antigas, de Markdown ou de colar). */
+const keeps = (node: PMNode) => !node.isTextblock && (node.isAtom || node.type.name === 'imageRow')
+
+/** Texto de um bloco com as quebras de linha (⇧Enter) como `\n`. */
+const textOf = (node: PMNode) => node.textBetween(0, node.content.size, undefined, (leaf) => (leaf.type.name === 'hardBreak' ? '\n' : ''))
+
+/** Linhas de texto de um bloco, na ordem: os parágrafos dos itens (subitens inclusive) ou as linhas do código, com
+ *  as fotos e anexos que estavam no meio. */
 function lines(node: PMNode): PMNode[] {
   const schema = node.type.schema
   if (node.type.name === 'codeBlock') {
     return node.textContent.split('\n').map((l) => schema.nodes.paragraph.create(null, l ? schema.text(l) : null))
   }
-  if (node.isTextblock) return [node]
+  if (node.isTextblock || keeps(node)) return [node]
   const out: PMNode[] = []
   node.forEach((child) => out.push(...lines(child)))
   return out
 }
 
 /** Lista na forma `to`, mantendo os níveis (subitens) e, entre checklists, o marcado. */
-function relist(list: PMNode, to: 'bullet' | 'task'): PMNode {
+function relist(list: PMNode, to: ListShape): PMNode {
   const schema = list.type.schema
   const [listType, itemType] = LISTS[to]
   const items: PMNode[] = []
   list.forEach((item) => {
     const content: PMNode[] = []
-    item.forEach((c) => content.push(c.type.name in { bulletList: 1, orderedList: 1, taskList: 1 } ? relist(c, to) : c.isTextblock && c.type.name !== 'paragraph' ? schema.nodes.paragraph.create(null, c.content) : c))
+    item.forEach((c) => content.push(LIST_NAMES.has(c.type.name) ? relist(c, to) : c.isTextblock && c.type.name !== 'paragraph' ? schema.nodes.paragraph.create(null, c.content) : c))
     const attrs = to === 'task' ? { checked: item.type.name === 'taskItem' ? !!item.attrs.checked : false } : null
     items.push(schema.nodes[itemType].create(attrs, content))
   })
@@ -270,20 +299,29 @@ export function convertBlock(view: EditorView, pos: number, to: Shape) {
   const node = view.state.doc.nodeAt(pos)
   if (!node) return false
   const schema = node.type.schema
-  const isList = ['bulletList', 'orderedList', 'taskList'].includes(node.type.name)
+  if (shapeOf(node.type.name) === to) {
+    view.focus()
+    return false
+  }
   let out: PMNode[]
-  if ((to === 'bullet' || to === 'task') && isList) out = [relist(node, to)]
+  if (isListShape(to) && LIST_NAMES.has(node.type.name)) out = [relist(node, to)]
   else {
-    const ls = lines(node)
-    if (to === 'paragraph') out = ls.map((l) => schema.nodes.paragraph.create(null, l.content))
-    else if (to === 'heading') out = ls.map((l) => schema.nodes.heading.create({ level: 3 }, l.content))
-    else if (to === 'code') out = [schema.nodes.codeBlock.create(null, ls.length && ls.some((l) => l.textContent) ? schema.text(ls.map((l) => l.textContent).join('\n')) : null)]
-    else {
+    const all = lines(node)
+    const ls = all.filter((l) => l.isTextblock)
+    const kept = all.filter(keeps)
+    // Um título continua do tamanho que era; o resto vira o título pequeno.
+    const level = node.type.name === 'heading' ? node.attrs.level : 3
+    if (to === 'paragraph') out = all.map((l) => (l.isTextblock ? schema.nodes.paragraph.create(null, l.content) : l))
+    else if (to === 'heading') out = all.map((l) => (l.isTextblock ? schema.nodes.heading.create({ level }, l.content) : l))
+    else if (to === 'code') {
+      const text = ls.map(textOf).join('\n')
+      out = [schema.nodes.codeBlock.create(null, text ? schema.text(text) : null), ...kept]
+    } else {
       const [listType, itemType] = LISTS[to]
       const items = (ls.length ? ls : [schema.nodes.paragraph.create()]).map((l) =>
         schema.nodes[itemType].create(to === 'task' ? { checked: false } : null, schema.nodes.paragraph.create(null, l.content)),
       )
-      out = [schema.nodes[listType].create(null, items)]
+      out = [schema.nodes[listType].create(null, items), ...kept]
     }
   }
   const tr = view.state.tr.replaceWith(pos, pos + node.nodeSize, out)
