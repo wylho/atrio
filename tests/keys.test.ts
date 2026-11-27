@@ -117,7 +117,7 @@ describe('links', () => {
   it('"Atualizar prévia" sem rede deixa o cartão como estava; a prévia não entra no desfazer', async () => {
     const card = { type: 'linkCard', attrs: { url: 'https://exemplo.com/a', title: 'Antigo', description: 'd' } }
     const e = ed(doc(card, { type: 'paragraph' }))
-    fillPreview(e.view, 'https://exemplo.com/a', async () => ({ title: null, description: null, site: null, image: null }), true)
+    fillPreview(e.view, 'https://exemplo.com/a', async () => ({ url: 'https://exemplo.com/a', title: null, description: null, site: null, image: null }), true)
     await new Promise((r) => setTimeout(r, 0))
     expect(e.state.doc.firstChild!.attrs.title).toBe('Antigo')
 
@@ -125,7 +125,7 @@ describe('links', () => {
     f.commands.insertContent({ type: 'linkCard', attrs: { url: 'https://exemplo.com/b' } })
     // a prévia chega bem depois (fora do grupo do desfazer de quem colou)
     f.view.dispatch(closeHistory(f.state.tr))
-    fillPreview(f.view, 'https://exemplo.com/b', async () => ({ title: 'Novo', description: null, site: null, image: null }))
+    fillPreview(f.view, 'https://exemplo.com/b', async () => ({ url: 'https://exemplo.com/b', title: 'Novo', description: null, site: null, image: null }))
     await new Promise((r) => setTimeout(r, 0))
     expect(f.state.doc.firstChild!.attrs.title).toBe('Novo')
     f.commands.undo()
